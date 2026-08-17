@@ -1,0 +1,729 @@
+{
+  "infobars": [],
+  "keys": [
+    {
+      "action": {
+        "controllers": [
+          "Keypad"
+        ],
+        "disable_automatic_states": false,
+        "encoder": null,
+        "icon": "opendeck/multi-action.png",
+        "name": "Multi Action",
+        "plugin": "opendeck",
+        "property_inspector": "",
+        "states": [
+          {
+            "alignment": "middle",
+            "background_colour": "#000000",
+            "colour": "#FFFFFF",
+            "family": "Liberation Sans",
+            "image": "opendeck/multi-action.png",
+            "image_scale": 100,
+            "name": "",
+            "show": true,
+            "size": 16,
+            "stroke_colour": "#000000",
+            "stroke_size": 3,
+            "style": "Regular",
+            "text": "",
+            "underline": false
+          }
+        ],
+        "supported_in_multi_actions": false,
+        "tooltip": "Execute multiple actions",
+        "uuid": "opendeck.multiaction",
+        "visible_in_action_list": true
+      },
+      "children": [
+        {
+          "action": {
+            "controllers": [
+              "Keypad",
+              "Encoder"
+            ],
+            "disable_automatic_states": false,
+            "encoder": null,
+            "icon": "plugins/com.amansprojects.starterpack.sdPlugin/icons/inputSimulation.png",
+            "name": "Simulate Input",
+            "plugin": "com.amansprojects.starterpack.sdPlugin",
+            "property_inspector": "plugins/com.amansprojects.starterpack.sdPlugin/propertyInspector/inputSimulation.html",
+            "states": [
+              {
+                "alignment": "middle",
+                "background_colour": "#000000",
+                "colour": "#FFFFFF",
+                "family": "Liberation Sans",
+                "image": "plugins/com.amansprojects.starterpack.sdPlugin/icons/inputSimulation.png",
+                "image_scale": 100,
+                "name": "",
+                "show": true,
+                "size": 16,
+                "stroke_colour": "#000000",
+                "stroke_size": 3,
+                "style": "Regular",
+                "text": "",
+                "underline": false
+              }
+            ],
+            "supported_in_multi_actions": true,
+            "tooltip": "Simulate mouse or keyboard input",
+            "uuid": "com.amansprojects.starterpack.inputsimulation",
+            "visible_in_action_list": true
+          },
+          "children": null,
+          "context": "Keypad.0.1",
+          "current_state": 0,
+          "settings": {
+            "anticlockwise": "",
+            "clockwise": "",
+            "down": "[Key(Shift, Press), Key(Tab, Click), Key(Shift, Release)]",
+            "up": ""
+          },
+          "states": [
+            {
+              "alignment": "middle",
+              "background_colour": "#000000",
+              "colour": "#FFFFFF",
+              "family": "Liberation Sans",
+              "image": "plugins/com.amansprojects.starterpack.sdPlugin/icons/inputSimulation.png",
+              "image_scale": 100,
+              "name": "",
+              "show": true,
+              "size": 16,
+              "stroke_colour": "#000000",
+              "stroke_size": 3,
+              "style": "Regular",
+              "text": "",
+              "underline": false
+            }
+          ]
+        },
+        {
+          "action": {
+            "controllers": [
+              "Keypad"
+            ],
+            "disable_automatic_states": false,
+            "encoder": null,
+            "icon": "plugins/com.pcmod.ccmode.sdPlugin/states/unknown.png",
+            "name": "Permission mode",
+            "plugin": "com.pcmod.ccmode.sdPlugin",
+            "property_inspector": "",
+            "states": [
+              {
+                "alignment": "bottom",
+                "background_colour": "#000000",
+                "colour": "#FFFFFF",
+                "family": "Liberation Sans",
+                "image": "plugins/com.pcmod.ccmode.sdPlugin/states/unknown.png",
+                "image_scale": 100,
+                "name": "Indicator",
+                "show": true,
+                "size": 13,
+                "stroke_colour": "#000000",
+                "stroke_size": 3,
+                "style": "Bold",
+                "text": "?",
+                "underline": false
+              }
+            ],
+            "supported_in_multi_actions": true,
+            "tooltip": "Mostra la permission mode attiva di Claude Code (sola lettura)",
+            "uuid": "com.pcmod.ccmode.indicator",
+            "visible_in_action_list": true
+          },
+          "children": null,
+          "context": "Keypad.0.2",
+          "current_state": 0,
+          "settings": {},
+          "states": [
+            {
+              "alignment": "bottom",
+              "background_colour": "#000000",
+              "colour": "#FFFFFF",
+              "family": "Liberation Sans",
+              "image": "0.png",
+              "image_scale": 100,
+              "name": "Indicator",
+              "show": true,
+              "size": 13,
+              "stroke_colour": "#000000",
+              "stroke_size": 3,
+              "style": "Bold",
+              "text": "AUTO",
+              "underline": false
+            }
+          ]
+        }
+      ],
+      "context": "Keypad.0.0",
+      "current_state": 0,
+      "settings": {},
+      "states": [
+        {
+          "alignment": "middle",
+          "background_colour": "#000000",
+          "colour": "#FFFFFF",
+          "family": "Liberation Sans",
+          "image": "opendeck/multi-action.png",
+          "image_scale": 100,
+          "name": "",
+          "show": true,
+          "size": 16,
+          "stroke_colour": "#000000",
+          "stroke_size": 3,
+          "style": "Regular",
+          "text": "",
+          "underline": false
+        }
+      ]
+    },
+    {
+      "action": {
+        "controllers": [
+          "Keypad"
+        ],
+        "disable_automatic_states": false,
+        "encoder": null,
+        "icon": "opendeck/multi-action.png",
+        "name": "Multi Action",
+        "plugin": "opendeck",
+        "property_inspector": "",
+        "states": [
+          {
+            "alignment": "middle",
+            "background_colour": "#000000",
+            "colour": "#FFFFFF",
+            "family": "Liberation Sans",
+            "image": "opendeck/multi-action.png",
+            "image_scale": 100,
+            "name": "",
+            "show": true,
+            "size": 16,
+            "stroke_colour": "#000000",
+            "stroke_size": 3,
+            "style": "Regular",
+            "text": "",
+            "underline": false
+          }
+        ],
+        "supported_in_multi_actions": false,
+        "tooltip": "Execute multiple actions",
+        "uuid": "opendeck.multiaction",
+        "visible_in_action_list": true
+      },
+      "children": [
+        {
+          "action": {
+            "controllers": [
+              "Keypad"
+            ],
+            "disable_automatic_states": false,
+            "encoder": null,
+            "icon": "plugins/com.pcmod.ccmode.sdPlugin/states/unknown.png",
+            "name": "Permission mode",
+            "plugin": "com.pcmod.ccmode.sdPlugin",
+            "property_inspector": "",
+            "states": [
+              {
+                "alignment": "bottom",
+                "background_colour": "#000000",
+                "colour": "#FFFFFF",
+                "family": "Liberation Sans",
+                "image": "plugins/com.pcmod.ccmode.sdPlugin/states/unknown.png",
+                "image_scale": 100,
+                "name": "Indicator",
+                "show": true,
+                "size": 13,
+                "stroke_colour": "#000000",
+                "stroke_size": 3,
+                "style": "Bold",
+                "text": "?",
+                "underline": false
+              }
+            ],
+            "supported_in_multi_actions": true,
+            "tooltip": "Mostra la permission mode attiva di Claude Code (sola lettura)",
+            "uuid": "com.pcmod.ccmode.indicator",
+            "visible_in_action_list": true
+          },
+          "children": null,
+          "context": "Keypad.1.1",
+          "current_state": 0,
+          "settings": {},
+          "states": [
+            {
+              "alignment": "bottom",
+              "background_colour": "#000000",
+              "colour": "#FFFFFF",
+              "family": "Liberation Sans",
+              "image": "0.png",
+              "image_scale": 100,
+              "name": "Indicator",
+              "show": true,
+              "size": 13,
+              "stroke_colour": "#000000",
+              "stroke_size": 3,
+              "style": "Bold",
+              "text": "AUTO",
+              "underline": false
+            }
+          ]
+        },
+        {
+          "action": {
+            "controllers": [
+              "Keypad",
+              "Encoder"
+            ],
+            "disable_automatic_states": false,
+            "encoder": null,
+            "icon": "plugins/com.amansprojects.starterpack.sdPlugin/icons/inputSimulation.png",
+            "name": "Simulate Input",
+            "plugin": "com.amansprojects.starterpack.sdPlugin",
+            "property_inspector": "plugins/com.amansprojects.starterpack.sdPlugin/propertyInspector/inputSimulation.html",
+            "states": [
+              {
+                "alignment": "middle",
+                "background_colour": "#000000",
+                "colour": "#FFFFFF",
+                "family": "Liberation Sans",
+                "image": "plugins/com.amansprojects.starterpack.sdPlugin/icons/inputSimulation.png",
+                "image_scale": 100,
+                "name": "",
+                "show": true,
+                "size": 16,
+                "stroke_colour": "#000000",
+                "stroke_size": 3,
+                "style": "Regular",
+                "text": "",
+                "underline": false
+              }
+            ],
+            "supported_in_multi_actions": true,
+            "tooltip": "Simulate mouse or keyboard input",
+            "uuid": "com.amansprojects.starterpack.inputsimulation",
+            "visible_in_action_list": true
+          },
+          "children": null,
+          "context": "Keypad.1.2",
+          "current_state": 0,
+          "settings": {
+            "anticlockwise": "",
+            "clockwise": "",
+            "down": "[Key(Shift, Press), Key(Tab, Click), Key(Shift, Release)]",
+            "up": ""
+          },
+          "states": [
+            {
+              "alignment": "middle",
+              "background_colour": "#000000",
+              "colour": "#FFFFFF",
+              "family": "Liberation Sans",
+              "image": "plugins/com.amansprojects.starterpack.sdPlugin/icons/inputSimulation.png",
+              "image_scale": 100,
+              "name": "",
+              "show": true,
+              "size": 16,
+              "stroke_colour": "#000000",
+              "stroke_size": 3,
+              "style": "Regular",
+              "text": "",
+              "underline": false
+            }
+          ]
+        }
+      ],
+      "context": "Keypad.1.0",
+      "current_state": 0,
+      "settings": {},
+      "states": [
+        {
+          "alignment": "middle",
+          "background_colour": "#000000",
+          "colour": "#FFFFFF",
+          "family": "Liberation Sans",
+          "image": "opendeck/multi-action.png",
+          "image_scale": 100,
+          "name": "",
+          "show": true,
+          "size": 16,
+          "stroke_colour": "#000000",
+          "stroke_size": 3,
+          "style": "Regular",
+          "text": "",
+          "underline": false
+        }
+      ]
+    },
+    {
+      "action": {
+        "controllers": [
+          "Keypad"
+        ],
+        "disable_automatic_states": false,
+        "encoder": null,
+        "icon": "plugins/com.pcmod.ccmode.sdPlugin/states/unknown.png",
+        "name": "Permission mode",
+        "plugin": "com.pcmod.ccmode.sdPlugin",
+        "property_inspector": "",
+        "states": [
+          {
+            "alignment": "bottom",
+            "background_colour": "#000000",
+            "colour": "#FFFFFF",
+            "family": "Liberation Sans",
+            "image": "plugins/com.pcmod.ccmode.sdPlugin/states/unknown.png",
+            "image_scale": 100,
+            "name": "Indicator",
+            "show": true,
+            "size": 13,
+            "stroke_colour": "#000000",
+            "stroke_size": 3,
+            "style": "Bold",
+            "text": "?",
+            "underline": false
+          }
+        ],
+        "supported_in_multi_actions": true,
+        "tooltip": "Mostra la permission mode attiva di Claude Code (sola lettura)",
+        "uuid": "com.pcmod.ccmode.indicator",
+        "visible_in_action_list": true
+      },
+      "children": null,
+      "context": "Keypad.2.0",
+      "current_state": 0,
+      "settings": {},
+      "states": [
+        {
+          "alignment": "bottom",
+          "background_colour": "#000000",
+          "colour": "#FFFFFF",
+          "family": "Liberation Sans",
+          "image": "0.png",
+          "image_scale": 100,
+          "name": "Indicator",
+          "show": true,
+          "size": 13,
+          "stroke_colour": "#000000",
+          "stroke_size": 3,
+          "style": "Bold",
+          "text": "AUTO",
+          "underline": false
+        }
+      ]
+    },
+    {
+      "action": {
+        "controllers": [
+          "Keypad"
+        ],
+        "disable_automatic_states": false,
+        "encoder": null,
+        "icon": "opendeck/multi-action.png",
+        "name": "Multi Action",
+        "plugin": "opendeck",
+        "property_inspector": "",
+        "states": [
+          {
+            "alignment": "middle",
+            "background_colour": "#000000",
+            "colour": "#FFFFFF",
+            "family": "Liberation Sans",
+            "image": "opendeck/multi-action.png",
+            "image_scale": 100,
+            "name": "",
+            "show": true,
+            "size": 16,
+            "stroke_colour": "#000000",
+            "stroke_size": 3,
+            "style": "Regular",
+            "text": "",
+            "underline": false
+          }
+        ],
+        "supported_in_multi_actions": false,
+        "tooltip": "Execute multiple actions",
+        "uuid": "opendeck.multiaction",
+        "visible_in_action_list": true
+      },
+      "children": [
+        {
+          "action": {
+            "controllers": [
+              "Keypad"
+            ],
+            "disable_automatic_states": false,
+            "encoder": null,
+            "icon": "plugins/com.pcmod.ccmode.sdPlugin/states/unknown.png",
+            "name": "Permission mode",
+            "plugin": "com.pcmod.ccmode.sdPlugin",
+            "property_inspector": "",
+            "states": [
+              {
+                "alignment": "bottom",
+                "background_colour": "#000000",
+                "colour": "#FFFFFF",
+                "family": "Liberation Sans",
+                "image": "plugins/com.pcmod.ccmode.sdPlugin/states/unknown.png",
+                "image_scale": 100,
+                "name": "Indicator",
+                "show": true,
+                "size": 13,
+                "stroke_colour": "#000000",
+                "stroke_size": 3,
+                "style": "Bold",
+                "text": "?",
+                "underline": false
+              }
+            ],
+            "supported_in_multi_actions": true,
+            "tooltip": "Mostra la permission mode attiva di Claude Code (sola lettura)",
+            "uuid": "com.pcmod.ccmode.indicator",
+            "visible_in_action_list": true
+          },
+          "children": null,
+          "context": "Keypad.3.1",
+          "current_state": 0,
+          "settings": {},
+          "states": [
+            {
+              "alignment": "bottom",
+              "background_colour": "#000000",
+              "colour": "#FFFFFF",
+              "family": "Liberation Sans",
+              "image": "0.png",
+              "image_scale": 100,
+              "name": "Indicator",
+              "show": true,
+              "size": 13,
+              "stroke_colour": "#000000",
+              "stroke_size": 3,
+              "style": "Bold",
+              "text": "AUTO",
+              "underline": false
+            }
+          ]
+        }
+      ],
+      "context": "Keypad.3.0",
+      "current_state": 0,
+      "settings": {},
+      "states": [
+        {
+          "alignment": "middle",
+          "background_colour": "#000000",
+          "colour": "#FFFFFF",
+          "family": "Liberation Sans",
+          "image": "opendeck/multi-action.png",
+          "image_scale": 100,
+          "name": "",
+          "show": true,
+          "size": 16,
+          "stroke_colour": "#000000",
+          "stroke_size": 3,
+          "style": "Regular",
+          "text": "",
+          "underline": false
+        }
+      ]
+    },
+    null,
+    null,
+    {
+      "action": {
+        "controllers": [
+          "Keypad",
+          "Encoder"
+        ],
+        "disable_automatic_states": false,
+        "encoder": null,
+        "icon": "plugins/com.amansprojects.starterpack.sdPlugin/icons/switchProfile.png",
+        "name": "Switch Profile",
+        "plugin": "com.amansprojects.starterpack.sdPlugin",
+        "property_inspector": "plugins/com.amansprojects.starterpack.sdPlugin/propertyInspector/switchProfile.html",
+        "states": [
+          {
+            "alignment": "middle",
+            "background_colour": "#000000",
+            "colour": "#FFFFFF",
+            "family": "Liberation Sans",
+            "image": "plugins/com.amansprojects.starterpack.sdPlugin/icons/switchProfile.png",
+            "image_scale": 100,
+            "name": "",
+            "show": true,
+            "size": 16,
+            "stroke_colour": "#000000",
+            "stroke_size": 3,
+            "style": "Regular",
+            "text": "",
+            "underline": false
+          }
+        ],
+        "supported_in_multi_actions": true,
+        "tooltip": "Switch the selected profile",
+        "uuid": "com.amansprojects.starterpack.switchprofile",
+        "visible_in_action_list": true
+      },
+      "children": null,
+      "context": "Keypad.6.0",
+      "current_state": 0,
+      "settings": {
+        "anticlockwise": "Default",
+        "clockwise": "Default",
+        "device": "n3-4250D2784745",
+        "profile": "Claude/1-guida"
+      },
+      "states": [
+        {
+          "alignment": "middle",
+          "background_colour": "#000000",
+          "colour": "#FFFFFF",
+          "family": "Liberation Sans",
+          "image": "plugins/com.amansprojects.starterpack.sdPlugin/icons/switchProfile.png",
+          "image_scale": 100,
+          "name": "",
+          "show": true,
+          "size": 16,
+          "stroke_colour": "#000000",
+          "stroke_size": 3,
+          "style": "Regular",
+          "text": "",
+          "underline": false
+        }
+      ]
+    },
+    {
+      "action": {
+        "controllers": [
+          "Keypad",
+          "Encoder"
+        ],
+        "disable_automatic_states": false,
+        "encoder": null,
+        "icon": "plugins/com.amansprojects.starterpack.sdPlugin/icons/switchProfile.png",
+        "name": "Switch Profile",
+        "plugin": "com.amansprojects.starterpack.sdPlugin",
+        "property_inspector": "plugins/com.amansprojects.starterpack.sdPlugin/propertyInspector/switchProfile.html",
+        "states": [
+          {
+            "alignment": "middle",
+            "background_colour": "#000000",
+            "colour": "#FFFFFF",
+            "family": "Liberation Sans",
+            "image": "plugins/com.amansprojects.starterpack.sdPlugin/icons/switchProfile.png",
+            "image_scale": 100,
+            "name": "",
+            "show": true,
+            "size": 16,
+            "stroke_colour": "#000000",
+            "stroke_size": 3,
+            "style": "Regular",
+            "text": "",
+            "underline": false
+          }
+        ],
+        "supported_in_multi_actions": true,
+        "tooltip": "Switch the selected profile",
+        "uuid": "com.amansprojects.starterpack.switchprofile",
+        "visible_in_action_list": true
+      },
+      "children": null,
+      "context": "Keypad.7.0",
+      "current_state": 0,
+      "settings": {
+        "anticlockwise": "Default",
+        "clockwise": "Default",
+        "device": "n3-4250D2784745",
+        "profile": "Claude/2-contesto"
+      },
+      "states": [
+        {
+          "alignment": "middle",
+          "background_colour": "#000000",
+          "colour": "#FFFFFF",
+          "family": "Liberation Sans",
+          "image": "plugins/com.amansprojects.starterpack.sdPlugin/icons/switchProfile.png",
+          "image_scale": 100,
+          "name": "",
+          "show": true,
+          "size": 16,
+          "stroke_colour": "#000000",
+          "stroke_size": 3,
+          "style": "Regular",
+          "text": "",
+          "underline": false
+        }
+      ]
+    },
+    {
+      "action": {
+        "controllers": [
+          "Keypad",
+          "Encoder"
+        ],
+        "disable_automatic_states": false,
+        "encoder": null,
+        "icon": "plugins/com.amansprojects.starterpack.sdPlugin/icons/switchProfile.png",
+        "name": "Switch Profile",
+        "plugin": "com.amansprojects.starterpack.sdPlugin",
+        "property_inspector": "plugins/com.amansprojects.starterpack.sdPlugin/propertyInspector/switchProfile.html",
+        "states": [
+          {
+            "alignment": "middle",
+            "background_colour": "#000000",
+            "colour": "#FFFFFF",
+            "family": "Liberation Sans",
+            "image": "plugins/com.amansprojects.starterpack.sdPlugin/icons/switchProfile.png",
+            "image_scale": 100,
+            "name": "",
+            "show": true,
+            "size": 16,
+            "stroke_colour": "#000000",
+            "stroke_size": 3,
+            "style": "Regular",
+            "text": "",
+            "underline": false
+          }
+        ],
+        "supported_in_multi_actions": true,
+        "tooltip": "Switch the selected profile",
+        "uuid": "com.amansprojects.starterpack.switchprofile",
+        "visible_in_action_list": true
+      },
+      "children": null,
+      "context": "Keypad.8.0",
+      "current_state": 0,
+      "settings": {
+        "anticlockwise": "Default",
+        "clockwise": "Default",
+        "device": "n3-4250D2784745",
+        "profile": "Claude/3-regolazioni"
+      },
+      "states": [
+        {
+          "alignment": "middle",
+          "background_colour": "#000000",
+          "colour": "#FFFFFF",
+          "family": "Liberation Sans",
+          "image": "plugins/com.amansprojects.starterpack.sdPlugin/icons/switchProfile.png",
+          "image_scale": 100,
+          "name": "",
+          "show": true,
+          "size": 16,
+          "stroke_colour": "#000000",
+          "stroke_size": 3,
+          "style": "Regular",
+          "text": "",
+          "underline": false
+        }
+      ]
+    }
+  ],
+  "sliders": [
+    null,
+    null,
+    null
+  ]
+}

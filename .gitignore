@@ -1,0 +1,29 @@
+# Log. plugin.log non contiene segreti, ma registra l'orario di ogni
+# sessione di lavoro.
+*.log
+
+# Python
+__pycache__/
+*.pyc
+
+# Profili OpenDeck salvati: sono legati all'ID di un deck preciso e sul
+# dispositivo di chiunque altro non funzionano. Restano sul disco, fuori dal
+# repo pubblico.
+backup/
+
+# Archivi scaricati
+*.zip
+
+# Permessi di Claude Code specifici di questa macchina (contiene percorsi
+# assoluti e l'ID del deck).
+.claude/settings.local.json
+
+# Export di sessione di Claude Code: dump del terminale con percorsi
+# assoluti, contenuti di file e session_id reali. Vivono fuori dal repo, in
+# ../claude-mode-deck-privato/; il pattern e' una rete di sicurezza.
+[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]-*.txt
+
+# Output di scripts/profili-genera.py: rigenerabile, e contiene l'ID del deck
+# nei percorsi delle immagini.
+scripts/nuovi-profili/
+scripts/nuove-immagini/

@@ -1,0 +1,36 @@
+{
+	"Name": "Claude Code Mode",
+	"Author": "meobob",
+	"Version": "0.1.0",
+	"Icon": "icon",
+	"Category": "Claude Code",
+	"CategoryIcon": "icon",
+	"CodePath": "plugin.mjs",
+	"Actions": [
+		{
+			"Name": "Permission mode",
+			"UUID": "io.github.meobob.ccmode.indicator",
+			"Tooltip": "Mostra la permission mode attiva di Claude Code; premi per cambiarla",
+			"Icon": "states/unknown",
+			"Controllers": ["Keypad"],
+			"SupportedInMultiActions": false,
+			"States": [
+				{
+					"Image": "states/unknown",
+					"Name": "Indicator",
+					"Title": "?",
+					"ShowTitle": true,
+					"TitleColor": "#FFFFFF",
+					"TitleAlignment": "bottom",
+					"FontStyle": "Bold",
+					"FontSize": "13"
+				}
+			]
+		}
+	],
+	"OS": [
+		{ "Platform": "linux" },
+		{ "Platform": "windows" },
+		{ "Platform": "mac" }
+	]
+}
