@@ -199,6 +199,14 @@ distanza: a occhio non si vedeva.
    schermo, e la notifica di inattività di *un'altra* sessione l'ha
    sovrascritta dopo 18 secondi. Ora ogni sessione ha il suo file in
    `~/.claude/cc-state/`, e il plugin aggrega. Vedi "Stato per sessione".
+
+   **Misurato e visto.** Il log del plugin mostra 209 secondi di `ti aspetta`
+   continuo mentre altre due sessioni passavano per `ha finito` e `inattivo`; e
+   in una seconda prova il tasto è stato guardato per oltre quattro minuti, e
+   non ha vacillato. Durante quella prova l'aggregazione ha fatto il suo lavoro
+   per conto suo: una **sessione vera e non coinvolta nella prova** ha aperto
+   una richiesta di permesso, e il tasto l'ha segnalata. Il 19/08 quella
+   richiesta sarebbe stata invisibile — è il caso d'uso, capitato da solo.
 3. Il deck manda tasti alla finestra attiva: il terminale deve avere il focus.
    Vale anche per `sendkeys.py`, che usa la stessa strada (XTEST).
 4. Un tasto appena creato resta `?` finché non lo premi una volta. Sparisce al
