@@ -108,14 +108,24 @@ say "Hook copiato in $DEST"
 printf '%s\n' "$MERGED" | jq . > "$SETTINGS"
 say "Registrato su: $SEMPLICI $CON_MATCHER"
 
-TEST=$(mktemp)
+TESTDIR=$(mktemp -d)
 echo '{"hook_event_name":"PermissionRequest","session_id":"prova"}' \
-	| CC_ACTIVITY_STATE_FILE="$TEST" node "$DEST"
-if jq -e '.state == "wait"' "$TEST" >/dev/null 2>&1; then
-	say "Prova a vuoto superata: $(cat "$TEST")"
+	| CC_ACTIVITY_STATE_DIR="$TESTDIR" node "$DEST"
+if jq -e '.state == "wait"' "$TESTDIR/prova.json" >/dev/null 2>&1; then
+	say "Prova a vuoto superata: $(cat "$TESTDIR/prova.json")"
 else
 	printf '\033[33mATTENZIONE:\033[0m la prova a vuoto non ha dato il risultato atteso.\n'
 fi
-rm -f "$TEST"
+echo '{"hook_event_name":"SessionEnd","session_id":"prova"}' \
+	| CC_ACTIVITY_STATE_DIR="$TESTDIR" node "$DEST"
+[ -f "$TESTDIR/prova.json" ] \
+	&& printf '\033[33mATTENZIONE:\033[0m SessionEnd non ha cancellato il file.\n' \
+	|| say "SessionEnd cancella il file della propria sessione."
+rm -rf "$TESTDIR"
+
+if [ -f "$HOME/.claude/cc-activity.json" ]; then
+	rm -f "$HOME/.claude/cc-activity.json"
+	say "Rimosso il vecchio file singolo ~/.claude/cc-activity.json (ora si usa cc-state/activity/)."
+fi
 
 printf '\nFatto.\n'

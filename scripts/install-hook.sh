@@ -96,15 +96,30 @@ printf '%s\n' "$MERGED" | jq . > "$SETTINGS"
 say "Hook registrato su UserPromptSubmit, PreToolUse, SessionEnd."
 
 # ------------------------------------------------------------------ prova --
-TESTFILE=$(mktemp)
+TESTDIR=$(mktemp -d)
 echo '{"hook_event_name":"PreToolUse","permission_mode":"plan","session_id":"test"}' \
-	| CC_MODE_STATE_FILE="$TESTFILE" node "$DEST"
-if jq -e '.mode == "plan"' "$TESTFILE" >/dev/null 2>&1; then
-	say "Prova a vuoto superata: l'hook scrive correttamente."
+	| CC_MODE_STATE_DIR="$TESTDIR" node "$DEST"
+if jq -e '.mode == "plan"' "$TESTDIR/test.json" >/dev/null 2>&1; then
+	say "Prova a vuoto superata: scrive test.json, un file per sessione."
 else
 	printf '\033[33mATTENZIONE:\033[0m la prova a vuoto non ha prodotto il risultato atteso.\n'
-	printf '  Contenuto: %s\n' "$(cat "$TESTFILE")"
+	printf '  Contenuto di %s: %s\n' "$TESTDIR" "$(ls "$TESTDIR")"
 fi
-rm -f "$TESTFILE"
+# e la cancellazione a fine sessione
+echo '{"hook_event_name":"SessionEnd","session_id":"test"}' \
+	| CC_MODE_STATE_DIR="$TESTDIR" node "$DEST"
+[ -f "$TESTDIR/test.json" ] \
+	&& printf '\033[33mATTENZIONE:\033[0m SessionEnd non ha cancellato il file.\n' \
+	|| say "SessionEnd cancella il file della propria sessione."
+rm -rf "$TESTDIR"
+
+# Migrazione: dal 19/08/2026 lo stato sta in ~/.claude/cc-state/mode/, un file
+# per sessione. Il file singolo di prima non serve piu' e verrebbe ignorato
+# (il plugin ci ripiega solo se la cartella non esiste): meglio toglierlo che
+# lasciarlo a confondere chi legge.
+if [ -f "$HOME/.claude/cc-mode.json" ]; then
+	rm -f "$HOME/.claude/cc-mode.json"
+	say "Rimosso il vecchio file singolo ~/.claude/cc-mode.json (ora si usa cc-state/mode/)."
+fi
 
 printf '\nFatto. In Claude Code, /hooks deve ora elencare i tre hook.\n'

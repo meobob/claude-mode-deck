@@ -23,7 +23,7 @@
  * Richiede Node.js 22+ per la classe WebSocket globale.
  */
 
-import { readFileSync, existsSync, appendFileSync } from "node:fs";
+import { readFileSync, existsSync, appendFileSync, readdirSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,8 +36,39 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ACTION_UUID = "io.github.meobob.ccmode.indicator";
 const ACTIVITY_UUID = "io.github.meobob.ccmode.activity";
 
-const STATE_FILE =
-  process.env.CC_MODE_STATE_FILE || join(homedir(), ".claude", "cc-mode.json");
+// Una cartella per indicatore, un file per sessione. Fino al 19/08/2026 era un
+// file solo, e vinceva l'ultima sessione che scriveva: misurato, quel difetto
+// ha spento uno stato "ti aspetta" dopo 18 secondi con la richiesta ancora
+// aperta a schermo.
+const STATE_DIR =
+  process.env.CC_STATE_DIR || join(homedir(), ".claude", "cc-state");
+const MODE_DIR = process.env.CC_MODE_STATE_DIR || join(STATE_DIR, "mode");
+
+// Compatibilita': chi aveva il progetto installato prima ha ancora i file
+// singoli. Si usano SOLO se la cartella nuova non esiste — se esiste ed e'
+// vuota vuol dire che non ci sono sessioni, non che il dato sta altrove.
+const LEGACY_MODE_FILE = join(homedir(), ".claude", "cc-mode.json");
+const LEGACY_ACTIVITY_FILE = join(homedir(), ".claude", "cc-activity.json");
+
+/** Legge tutti i file di stato di una cartella. Ignora quelli illeggibili. */
+function leggiCartella(dir) {
+  let nomi;
+  try {
+    nomi = readdirSync(dir);
+  } catch {
+    return null; // cartella assente: il chiamante decide se ripiegare
+  }
+  const out = [];
+  for (const nome of nomi) {
+    if (!nome.endsWith(".json")) continue; // salta i .tmp di una scrittura in corso
+    try {
+      out.push(JSON.parse(readFileSync(join(dir, nome), "utf8")));
+    } catch {
+      /* file a meta' o rotto: come se non ci fosse */
+    }
+  }
+  return out;
+}
 
 // Ogni quanto rileggere il file di stato (ms).
 const POLL_MS = Number(process.env.CC_MODE_POLL_MS || 500);
@@ -55,18 +86,49 @@ const LOG_FILE = join(HERE, "plugin.log");
 // scrivono lo stesso file sarebbe una corsa. La mappa evento -> stato sta in
 // hook/cc-activity.mjs ed e' costruita sul log di eventi veri raccolto il
 // 19/08/2026, non sulla documentazione.
-const ACTIVITY_STATE_FILE =
-  process.env.CC_ACTIVITY_STATE_FILE ||
-  join(homedir(), ".claude", "cc-activity.json");
+const ACTIVITY_DIR =
+  process.env.CC_ACTIVITY_STATE_DIR || join(STATE_DIR, "activity");
 
 // Ogni quanto alternare i due fotogrammi di "aspetta" (ms).
 const BLINK_MS = Number(process.env.CC_ACTIVITY_BLINK_MS || 600);
 
-// Dopo quanti ms senza aggiornamenti tornare a "inattivo". 0 = mai, ed e' il
-// default: una singola chiamata a uno strumento puo' durare minuti senza
-// produrre eventi, e far scadere "lavora" mentre lavora sarebbe peggio del
-// male che cura. Resta a disposizione per chi lascia sessioni uccise a meta'.
-const ACTIVITY_STALE_MS = Number(process.env.CC_ACTIVITY_STALE_MS || 0);
+/**
+ * Scadenza dei file abbandonati, DIVERSA PER STATO.
+ *
+ * `SessionEnd` cancella il file, ma un terminale che muore non lo manda: senza
+ * scadenza un file rimasto su "lavora" terrebbe il deck blu per sempre.
+ *
+ * Una scadenza unica pero' ricreerebbe il difetto che stiamo togliendo, in
+ * versione lenta: un permesso aperto mentre sei a pranzo scadrebbe, il tasto
+ * tornerebbe grigio e la richiesta sarebbe ancora li'. Quindi:
+ *
+ *  - `work` 30 min. Il dato: nella sessione osservata il silenzio piu' lungo
+ *    con "lavora" attivo e' stato 95,2 s su 50 chiamate (mediana 2,2 s), e una
+ *    singola chiamata Bash non puo' superare i 600 s di timeout. Trenta minuti
+ *    sono 19 volte il silenzio massimo osservato e 3 volte quel tetto.
+ *  - `wait` 4 ore. Qui un dato NON c'e': dipende da quanto ci mette una
+ *    persona a tornare alla scrivania. E' una scelta di giudizio, dichiarata
+ *    come tale. Resta finita solo perche' una sessione morta col rosso acceso
+ *    non tenga il deck rosso fino al giorno dopo.
+ *  - `done` come `work`: innocuo in se', ma con l'aggregazione per gravita' un
+ *    verde abbandonato terrebbe il deck verde invece che grigio.
+ *  - `idle` mai: non afferma niente.
+ */
+const ACTIVITY_TTL = {
+  work: Number(process.env.CC_ACTIVITY_TTL_WORK || 30 * 60 * 1000),
+  wait: Number(process.env.CC_ACTIVITY_TTL_WAIT || 4 * 60 * 60 * 1000),
+  done: Number(process.env.CC_ACTIVITY_TTL_DONE || 30 * 60 * 1000),
+  idle: 0,
+};
+
+/**
+ * Ordine di gravita': chi vince quando piu' sessioni dicono cose diverse.
+ *
+ * Strategia A, scelta il 19/08/2026: se UNA QUALSIASI sessione ti aspetta,
+ * devi saperlo, ovunque sia. Un indicatore di allerta deve sbagliare per
+ * eccesso. Non dice QUALE sessione: quello e' il prezzo, ed e' accettato.
+ */
+const ACTIVITY_SEVERITA = ["wait", "work", "done", "idle"];
 
 /**
  * Mappa stato -> aspetto del tasto.
@@ -161,34 +223,72 @@ function loadImages() {
   return loadImagesFrom(MODES);
 }
 
-/** Legge il file di stato. Ritorna sempre una modalita' valida. */
+/**
+ * La modalita' da mostrare. Ritorna sempre un valore valido.
+ *
+ * Con piu' sessioni vince LA PIU' RECENTE, non la piu' pericolosa. Ragione: il
+ * tasto della modalita' non e' solo un indicatore, e' anche un comando — se lo
+ * premi manda `Shift+Tab` alla finestra attiva. Mostrare la sessione che ha
+ * dato segni di vita per ultima e' la migliore approssimazione disponibile di
+ * "quella che stai usando", visto che la Fase 0 ha escluso di poter risalire
+ * dalla finestra alla sessione.
+ */
 function readMode() {
-  if (!existsSync(STATE_FILE)) return "unknown";
-  try {
-    const data = JSON.parse(readFileSync(STATE_FILE, "utf8"));
-    if (!Object.prototype.hasOwnProperty.call(MODES, data.mode)) return "unknown";
-    if (STALE_AFTER_MS > 0 && typeof data.ts === "number") {
-      if (Date.now() - data.ts > STALE_AFTER_MS) return "unknown";
+  let voci = leggiCartella(MODE_DIR);
+  if (voci === null) {
+    // Cartella assente: installazione vecchia, si ripiega sul file singolo.
+    if (!existsSync(LEGACY_MODE_FILE)) return "unknown";
+    try {
+      voci = [JSON.parse(readFileSync(LEGACY_MODE_FILE, "utf8"))];
+    } catch {
+      return "unknown";
     }
-    return data.mode;
-  } catch {
-    return "unknown";
   }
+
+  const valide = voci.filter((v) => {
+    if (!Object.prototype.hasOwnProperty.call(MODES, v?.mode)) return false;
+    if (STALE_AFTER_MS > 0 && typeof v.ts === "number") {
+      if (Date.now() - v.ts > STALE_AFTER_MS) return false;
+    }
+    return true;
+  });
+  if (!valide.length) return "unknown";
+
+  valide.sort((a, b) => (b.ts ?? 0) - (a.ts ?? 0));
+  return valide[0].mode;
 }
 
-/** Legge il file di stato dell'attivita'. Ritorna sempre uno stato valido. */
+/**
+ * Lo stato di attivita' da mostrare. Ritorna sempre uno stato valido.
+ *
+ * Aggrega PER GRAVITA' (strategia A): se una qualsiasi sessione aspetta una
+ * risposta, il tasto lo dice, anche se in quel momento stai guardando altrove.
+ * I file scaduti non votano, con la scadenza che dipende dallo stato.
+ */
 function readActivity() {
-  if (!existsSync(ACTIVITY_STATE_FILE)) return "idle";
-  try {
-    const data = JSON.parse(readFileSync(ACTIVITY_STATE_FILE, "utf8"));
-    if (!Object.prototype.hasOwnProperty.call(ACTIVITY, data.state)) return "idle";
-    if (ACTIVITY_STALE_MS > 0 && typeof data.ts === "number") {
-      if (Date.now() - data.ts > ACTIVITY_STALE_MS) return "idle";
+  let voci = leggiCartella(ACTIVITY_DIR);
+  if (voci === null) {
+    if (!existsSync(LEGACY_ACTIVITY_FILE)) return "idle";
+    try {
+      voci = [JSON.parse(readFileSync(LEGACY_ACTIVITY_FILE, "utf8"))];
+    } catch {
+      return "idle";
     }
-    return data.state;
-  } catch {
-    return "idle";
   }
+
+  const adesso = Date.now();
+  const vive = voci.filter((v) => {
+    if (!Object.prototype.hasOwnProperty.call(ACTIVITY, v?.state)) return false;
+    const ttl = ACTIVITY_TTL[v.state] ?? 0;
+    if (ttl > 0 && typeof v.ts === "number" && adesso - v.ts > ttl) return false;
+    return true;
+  });
+  if (!vive.length) return "idle";
+
+  for (const stato of ACTIVITY_SEVERITA) {
+    if (vive.some((v) => v.state === stato)) return stato;
+  }
+  return "idle";
 }
 
 function parseArgs(argv) {

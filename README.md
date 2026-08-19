@@ -28,16 +28,31 @@ NodeSource. Never tried on Windows, never tried on Wayland.
 Two pieces:
 
 1. **`hook/cc-mode.mjs`** — a Claude Code hook. It receives the event JSON,
-   extracts `permission_mode` and writes it to `~/.claude/cc-mode.json`.
-2. **`io.github.meobob.ccmode.sdPlugin/`** — an OpenDeck plugin. It re-reads
-   that file every 500 ms and updates the key's image and title. Pressing the
-   key sends `Shift+Tab` to the focused window via `sendkeys.py`.
+   extracts `permission_mode` and writes it to
+   `~/.claude/cc-state/mode/<session_id>.json`.
+2. **`hook/cc-activity.mjs`** — a second hook, for the activity indicator. It
+   maps events to four states — working, waiting for you, done, idle — and
+   writes them to `~/.claude/cc-state/activity/<session_id>.json`.
+3. **`io.github.meobob.ccmode.sdPlugin/`** — an OpenDeck plugin with two
+   actions. It re-reads both directories every 500 ms and updates each key's
+   image and title. Pressing the mode key sends `Shift+Tab` to the focused
+   window via `sendkeys.py`.
 
 ```
-Claude Code --(hook)--> ~/.claude/cc-mode.json --(polling)--> OpenDeck plugin --> key
-     ^                                                                            |
-     +---------------- Shift+Tab via sendkeys.py (XTEST) <--------- key press -----+
+Claude Code --(hooks)--> ~/.claude/cc-state/<kind>/<session>.json
+                                    |
+                                    +--(polling)--> OpenDeck plugin --> keys
+     ^                                                                    |
+     +---------- Shift+Tab via sendkeys.py (XTEST) <------- key press ----+
 ```
+
+**One file per session.** With several sessions open the activity key shows the
+**most severe** state — if any session is waiting for an answer, you need to
+know — while the mode key shows the **most recent** one, because that key is
+also a command. Abandoned files expire, with a per-state timeout: `work` after
+30 minutes, `wait` only after 4 hours. A blind timeout would recreate the very
+bug this design fixes: a permission left open while you are at lunch is not a
+dead session.
 
 ### Status
 
@@ -197,7 +212,11 @@ from scratch: OpenDeck persists an independent copy per instance.
 
 | Variable | Default | Effect |
 |---|---|---|
-| `CC_MODE_STATE_FILE` | `~/.claude/cc-mode.json` | path of the state file (set it on **both** hook and plugin) |
+| `CC_MODE_STATE_DIR` | `~/.claude/cc-state/mode` | directory of the mode state files, one per session (set it on **both** hook and plugin) |
+| `CC_ACTIVITY_STATE_DIR` | `~/.claude/cc-state/activity` | same, for the activity indicator |
+| `CC_ACTIVITY_TTL_WORK` | `1800000` | ms after which an abandoned `work` file is ignored |
+| `CC_ACTIVITY_TTL_WAIT` | `14400000` | same for `wait`. Deliberately much longer |
+| `CC_ACTIVITY_BLINK_MS` | `600` | blink period of the red "waiting" state |
 | `CC_MODE_POLL_MS` | `500` | how often the plugin re-reads the file |
 | `CC_MODE_STALE_MS` | `0` (off) | after how many ms without updates to show "unknown" |
 | `CC_MODE_CYCLE` | on | `0` makes the key read-only again: show, don't touch |

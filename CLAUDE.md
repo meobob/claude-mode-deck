@@ -9,10 +9,41 @@ Ambiente: **Linux Mint 22.3** (base noble), sessione **X11**, bash.
 ## Come funziona
 
 ```
-Claude Code --(hook)--> ~/.claude/cc-mode.json --(polling)--> plugin OpenDeck --> tasto
-     ^                                                                             |
-     +---------------- Shift+Tab via sendkeys.py (XTEST) <-------- pressione ------+
+Claude Code --(hook)--> ~/.claude/cc-state/<tipo>/<sessione>.json
+                                    |
+                                    +--(polling 500 ms)--> plugin OpenDeck --> tasto
+     ^                                                                          |
+     +------------- Shift+Tab via sendkeys.py (XTEST) <------- pressione -------+
 ```
+
+Due indicatori, due hook, due cartelle: `mode/` per la permission mode,
+`activity/` per lo stato di attività (lavora / ti aspetta / ha finito /
+inattivo).
+
+## Stato per sessione
+
+**Un file per sessione, non uno solo.** Il nome è il `session_id`, che è
+l'unico discriminante disponibile: nei payload degli hook non c'è né un PID né
+un TTY, e il `cwd` è identico per due sessioni sullo stesso progetto —
+verificato il 19/08/2026 rileggendo 129 righe di log di eventi veri.
+
+`SessionEnd` **cancella** il file della propria sessione. Per il terminale che
+muore senza mandarlo c'è una scadenza, **diversa per stato**, perché una
+scadenza unica ricreerebbe il difetto in versione lenta — un permesso aperto
+mentre sei a pranzo non è una sessione morta:
+
+| Stato | Scade dopo | Perché |
+|---|---|---|
+| `work` | 30 min | 19× il silenzio massimo osservato con "lavora" attivo (95,2 s su 50 chiamate), 3× il tetto di 600 s di una chiamata Bash |
+| `wait` | 4 ore | **nessun dato**: dipende da quanto ci mette una persona a tornare. Scelta di giudizio, dichiarata come tale |
+| `done` | 30 min | innocuo in sé, ma un verde abbandonato terrebbe il deck verde invece che grigio |
+| `idle` | mai | non afferma niente |
+
+**Aggregazione**: l'attività mostra lo stato **più grave** fra tutte le
+sessioni (`wait` > `work` > `done` > `idle`) — se una qualsiasi sessione ti
+aspetta devi saperlo, ovunque sia. Non dice *quale*: è il prezzo, ed è
+accettato. La modalità invece mostra la sessione **più recente**, perché quel
+tasto è anche un comando: premuto manda `Shift+Tab` alla finestra attiva.
 
 L'hook legge `permission_mode` dal JSON degli eventi e lo scrive su file. Il
 plugin Node lo rilegge ogni 500 ms e manda `setImage` al deck.
@@ -62,6 +93,7 @@ cartella plugin OpenDeck   ~/.config/opendeck/plugins
 profili OpenDeck           ~/.config/opendeck/profiles/n3-4250D2784745/
 log principale OpenDeck    ~/.local/share/opendeck/logs/opendeck.log
 log del nostro plugin      ~/.config/opendeck/plugins/io.github.meobob.ccmode.sdPlugin/plugin.log
+stato degli indicatori     ~/.claude/cc-state/{mode,activity}/<session_id>.json
 ```
 
 Il log del plugin sta **dentro la sua cartella**, non nella cartella log di
@@ -150,12 +182,12 @@ distanza: a occhio non si vedeva.
    **Misurato il 15/08/2026**: invio del messaggio alle 20:03:37, ridisegno del
    tasto alle 20:03:38.090. Vale anche premendo l'indicatore stesso — per
    questo mostra un puntino di attesa che scade dopo 6 secondi.
-2. Un solo file di stato per indicatore: con più sessioni in parallelo vince
-   l'ultima. **Misurato il 19/08/2026** sull'indicatore di attività, dove pesa
-   molto più che sulla modalità: una sessione mostrava `ti aspetta` con una
-   richiesta di permesso aperta a schermo, e la notifica di inattività di
-   *un'altra* sessione l'ha sovrascritta dopo 18 secondi. Lo stato che conta di
-   più è anche quello più fragile.
+2. ~~Un solo file di stato: con più sessioni vince l'ultima.~~ **Risolto il
+   19/08/2026.** Era il difetto peggiore del progetto, e non era teorico: una
+   sessione mostrava `ti aspetta` con una richiesta di permesso aperta a
+   schermo, e la notifica di inattività di *un'altra* sessione l'ha
+   sovrascritta dopo 18 secondi. Ora ogni sessione ha il suo file in
+   `~/.claude/cc-state/`, e il plugin aggrega. Vedi "Stato per sessione".
 3. Il deck manda tasti alla finestra attiva: il terminale deve avere il focus.
    Vale anche per `sendkeys.py`, che usa la stessa strada (XTEST).
 4. Un tasto appena creato resta `?` finché non lo premi una volta. Sparisce al

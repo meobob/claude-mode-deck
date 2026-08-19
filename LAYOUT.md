@@ -148,6 +148,13 @@ Il rosso e' l'unico che lampeggia, perche' e' l'unico che chiede un'azione a te.
 In modalita' `auto` non scatta mai, e in `manual` non basta un comando
 innocuo: `date` passa liscio, ci vuole uno strumento con effetti.
 
+**Con piu' sessioni aperte il tasto mostra lo stato piu' grave**, non quello
+dell'ultima che ha parlato: se una qualsiasi sessione aspetta una risposta, il
+tasto e' rosso anche mentre lavori in un'altra. Non dice quale sia — per quello
+bisogna guardare i terminali. E' una scelta consapevole del 19/08/2026: un
+indicatore di allerta deve sbagliare per eccesso. Il dettaglio sta in
+`CLAUDE.md`, sezione "Stato per sessione".
+
 Perche' non si e' invece messo tutto sul tasto 6 impilando due azioni: si e'
 provato, e non funziona. Vedi "Multi Action" piu' avanti.
 

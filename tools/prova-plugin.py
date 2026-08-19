@@ -8,17 +8,23 @@ OpenDeck (`willAppear`, `keyDown`) e controlla che risponda con `setImage` e
 `setTitle` giusti quando il file di stato cambia.
 
 Copre entrambe le azioni: la modalita' (che deve continuare a funzionare) e
-l'attivita'. Usa file di stato temporanei: non tocca ~/.claude.
+l'attivita'. Usa CARTELLE di stato temporanee: non tocca ~/.claude.
+
+Dal 19/08/2026 copre anche il caso che ha motivato la riscrittura: PIU'
+SESSIONI CONTEMPORANEE, con stati diversi, e la scadenza dei file abbandonati
+che dipende dallo stato.
 
     ./tools/prova-plugin.py
 """
 import asyncio
 import json
 import os
+import shutil
 import socket
 import subprocess
 import sys
 import tempfile
+import time
 
 import websockets
 
@@ -57,14 +63,31 @@ async def main():
 
     server = await websockets.serve(handler, "127.0.0.1", porta)
 
-    modo_file = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
-    att_file = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
-    modo_file.write('{"mode":"auto","ts":0}'); modo_file.close()
-    att_file.write('{"state":"idle","ts":0}'); att_file.close()
+    base = tempfile.mkdtemp(prefix="prova-plugin-")
+    modo_dir = os.path.join(base, "mode")
+    att_dir = os.path.join(base, "activity")
+    os.makedirs(modo_dir); os.makedirs(att_dir)
+
+    def ora():
+        return int(time.time() * 1000)
+
+    def scrivi_modo(sessione, modo, eta_ms=0):
+        with open(os.path.join(modo_dir, sessione + ".json"), "w") as f:
+            json.dump({"mode": modo, "ts": ora() - eta_ms, "session_id": sessione}, f)
+
+    def scrivi_att(sessione, stato, eta_ms=0):
+        with open(os.path.join(att_dir, sessione + ".json"), "w") as f:
+            json.dump({"state": stato, "ts": ora() - eta_ms, "session_id": sessione}, f)
+
+    def togli_att(sessione):
+        os.unlink(os.path.join(att_dir, sessione + ".json"))
+
+    scrivi_modo("A", "auto")
+    scrivi_att("A", "idle")
 
     env = dict(os.environ,
-               CC_MODE_STATE_FILE=modo_file.name,
-               CC_ACTIVITY_STATE_FILE=att_file.name,
+               CC_MODE_STATE_DIR=modo_dir,
+               CC_ACTIVITY_STATE_DIR=att_dir,
                CC_MODE_CYCLE="0",          # niente XTEST durante la prova
                CC_MODE_POLL_MS="200",
                CC_ACTIVITY_BLINK_MS="300")
@@ -110,8 +133,7 @@ async def main():
     viste = []
     for stato, atteso in (("work", "LAVORA"), ("wait", "ASPETTA"),
                           ("done", "FINITO"), ("idle", "")):
-        with open(att_file.name, "w") as f:
-            f.write(json.dumps({"state": stato, "ts": 0}))
+        scrivi_att("A", stato)
         await asyncio.sleep(0.8)
         viste.append(immagini(CTX_ATT)[-1])
         esito(titoli(CTX_ATT)[-1] == atteso,
@@ -122,8 +144,7 @@ async def main():
     esito(len(set(viste)) == 4, "le quattro immagini sono tutte diverse fra loro")
 
     # --- lampeggio di "aspetta" --------------------------------------------
-    with open(att_file.name, "w") as f:
-        f.write(json.dumps({"state": "wait", "ts": 0}))
+    scrivi_att("A", "wait")
     await asyncio.sleep(0.8)
     segno = len(immagini(CTX_ATT))
     await asyncio.sleep(1.5)
@@ -137,14 +158,68 @@ async def main():
     esito(len(immagini(CTX_MODO)) == modo_prima,
           "mentre l'attivita' lampeggia, la modalita' non riceve nulla")
 
-    # --- regressione: l'indicatore di modalita' funziona ancora -------------
-    with open(att_file.name, "w") as f:
-        f.write(json.dumps({"state": "idle", "ts": 0}))
+    # --- PIU' SESSIONI: vince la piu' grave ---------------------------------
+    # E' il caso che il 19/08/2026 ha rotto l'indicatore: due sessioni, una
+    # aspetta e l'altra dice altro. Il rosso deve restare.
+    scrivi_att("A", "wait")
+    scrivi_att("B", "idle")
+    await asyncio.sleep(0.8)
+    esito(titoli(CTX_ATT)[-1] == "ASPETTA",
+          "due sessioni, una aspetta e una inattiva -> vince ASPETTA")
+
+    scrivi_att("B", "work")
+    await asyncio.sleep(0.8)
+    esito(titoli(CTX_ATT)[-1] == "ASPETTA",
+          "l'altra sessione passa a lavorare -> ASPETTA resta")
+
+    scrivi_att("B", "done")
+    await asyncio.sleep(0.8)
+    esito(titoli(CTX_ATT)[-1] == "ASPETTA",
+          "l'altra sessione finisce -> ASPETTA resta")
+
+    togli_att("A")   # come fa SessionEnd
+    await asyncio.sleep(0.8)
+    esito(titoli(CTX_ATT)[-1] == "FINITO",
+          "chiusa la sessione che aspettava -> subentra FINITO dell'altra")
+
+    scrivi_att("A", "work")
+    await asyncio.sleep(0.8)
+    esito(titoli(CTX_ATT)[-1] == "LAVORA", "lavora batte ha finito")
+
+    togli_att("A"); togli_att("B")
+    await asyncio.sleep(0.8)
+    esito(titoli(CTX_ATT)[-1] == "", "nessun file -> inattivo")
+
+    # --- scadenza che dipende dallo stato ----------------------------------
+    # Un "lavora" di 31 minuti fa e' una sessione morta: non deve votare.
+    # Un "aspetta" della stessa eta' e' una persona a pranzo: deve votare.
+    scrivi_att("A", "work", eta_ms=31 * 60 * 1000)
+    await asyncio.sleep(0.8)
+    esito(titoli(CTX_ATT)[-1] == "", "un 'lavora' di 31 minuti fa e' scaduto")
+
+    scrivi_att("B", "wait", eta_ms=31 * 60 * 1000)
+    await asyncio.sleep(0.8)
+    esito(titoli(CTX_ATT)[-1] == "ASPETTA",
+          "un 'aspetta' della stessa eta' NON e' scaduto")
+
+    scrivi_att("B", "wait", eta_ms=5 * 60 * 60 * 1000)
+    await asyncio.sleep(0.8)
+    esito(titoli(CTX_ATT)[-1] == "", "un 'aspetta' di 5 ore fa e' scaduto")
+
+    togli_att("A"); togli_att("B")
     await asyncio.sleep(0.5)
-    with open(modo_file.name, "w") as f:
-        f.write(json.dumps({"mode": "plan", "ts": 0}))
+
+    # --- regressione: l'indicatore di modalita' funziona ancora -------------
+    scrivi_modo("A", "plan")
     await asyncio.sleep(0.8)
     esito(titoli(CTX_MODO)[-1] == "PLAN", "la modalita' cambia ancora: titolo PLAN")
+
+    # --- modalita' con piu' sessioni: vince la piu' recente -----------------
+    scrivi_modo("A", "plan", eta_ms=60_000)
+    scrivi_modo("B", "bypassPermissions")
+    await asyncio.sleep(0.8)
+    esito(titoli(CTX_MODO)[-1] == "BYPASS",
+          "due sessioni: la modalita' mostrata e' quella scritta per ultima")
 
     # --- keyDown sull'attivita' non deve mandare tasti ----------------------
     await manda("keyDown", "io.github.meobob.ccmode.activity", CTX_ATT)
@@ -152,8 +227,7 @@ async def main():
 
     proc.terminate()
     server.close()
-    os.unlink(modo_file.name)
-    os.unlink(att_file.name)
+    shutil.rmtree(base, ignore_errors=True)
 
     print()
     if all(esiti):

@@ -151,7 +151,7 @@ elif dpkg -l 2>/dev/null | grep -q '^ii.*opendeck'; then
 	dpkg -l | grep -i opendeck | sed 's/^/         /'
 elif flatpak list 2>/dev/null | grep -qi opendeck; then
 	warn "Installato come Flatpak."
-	info "Il plugin indicatore gira nel sandbox e deve leggere ~/.claude/cc-mode.json:"
+	info "Il plugin indicatore gira nel sandbox e deve leggere ~/.claude/cc-state/:"
 	info "potrebbe servire un 'flatpak override' per l'accesso al filesystem."
 else
 	no "OpenDeck non trovato (ne' nativo ne' Flatpak)."
@@ -267,6 +267,9 @@ fi
 head_ "Claude Code — hook"
 if [ -f "$HOME/.claude/hooks/cc-mode.mjs" ]; then
 	ok "Hook presente in ~/.claude/hooks/cc-mode.mjs"
+	[ -f "$HOME/.claude/hooks/cc-activity.mjs" ] \
+		&& ok "Hook attivita' presente in ~/.claude/hooks/cc-activity.mjs" \
+		|| warn "Hook attivita' assente: ./scripts/install-activity.sh"
 else
 	no "Hook assente in ~/.claude/hooks/cc-mode.mjs"
 fi
@@ -294,21 +297,38 @@ else
 	no "~/.claude/settings.json non esiste ancora."
 fi
 
-head_ "File di stato"
-STATE="${CC_MODE_STATE_FILE:-$HOME/.claude/cc-mode.json}"
-if [ -f "$STATE" ]; then
-	ok "Presente: $STATE"
-	info "Contenuto: $(cat "$STATE")"
-	if command -v jq >/dev/null 2>&1; then
-		TS=$(jq -r '.ts // 0' "$STATE" 2>/dev/null)
-		if [ "$TS" -gt 0 ] 2>/dev/null; then
-			AGE=$(( ($(date +%s%3N) - TS) / 1000 ))
-			info "Scritto $AGE secondi fa."
-		fi
+# Dal 19/08/2026 lo stato e' una CARTELLA per indicatore, con un file per
+# sessione: prima era un file solo e con piu' sessioni vinceva l'ultima.
+head_ "Stato degli indicatori"
+for COPPIA in "mode:CC_MODE_STATE_DIR:modalita'" "activity:CC_ACTIVITY_STATE_DIR:attivita'"; do
+	SUB=${COPPIA%%:*}; RESTO=${COPPIA#*:}; VAR=${RESTO%%:*}; ETICHETTA=${RESTO#*:}
+	DIR=$(eval "echo \${$VAR:-\$HOME/.claude/cc-state/$SUB}")
+	if [ ! -d "$DIR" ]; then
+		no "Cartella assente: $DIR"
+		info "Normale finche' l'hook della $ETICHETTA non e' partito almeno una volta."
+		continue
 	fi
-else
-	no "Non ancora creato: $STATE"
-	info "Normale finche' l'hook non e' partito almeno una volta."
-fi
+	N=$(find "$DIR" -maxdepth 1 -name '*.json' | wc -l)
+	if [ "$N" -eq 0 ]; then
+		info "$ETICHETTA: nessuna sessione attiva (cartella vuota)."
+		continue
+	fi
+	ok "$ETICHETTA: $N sessione/i in $DIR"
+	for F in "$DIR"/*.json; do
+		BASE=$(basename "$F" .json)
+		if command -v jq >/dev/null 2>&1; then
+			VAL=$(jq -r '.state // .mode // "?"' "$F" 2>/dev/null)
+			TS=$(jq -r '.ts // 0' "$F" 2>/dev/null)
+			if [ "$TS" -gt 0 ] 2>/dev/null; then
+				AGE=$(( ($(date +%s%3N) - TS) / 1000 ))
+				info "  ${BASE:0:8}  $VAL  (${AGE}s fa)"
+			else
+				info "  ${BASE:0:8}  $VAL"
+			fi
+		else
+			info "  ${BASE:0:8}  $(cat "$F")"
+		fi
+	done
+done
 
 printf '\n'
