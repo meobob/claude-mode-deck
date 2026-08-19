@@ -46,6 +46,17 @@ dalla navigazione. `Esc` e `Shift+Tab` finiscono su tasti con schermo, e per
 premerli devi guardare. Se dopo qualche giorno questo pesa, la via d'uscita e'
 passare a due profili e liberare un tasto cieco.
 
+**Su un altro modello questo layout funziona, ma la sua ragione potrebbe non
+valere.** Il plugin AKP03 gestisce tredici dispositivi e li tratta tutti come
+3x3 tasti piu' 3 manopole — `ROW_COUNT`, `COL_COUNT`, `ENCODER_COUNT` in
+`src/mappings.rs` sono costanti di modulo, non parametri per dispositivo — e
+manda immagini a **tutti e nove** i tasti: su questo deck tre semplicemente non
+le mostrano. Quindi le icone si installano su tutti e nove e il layout regge
+ovunque. Quello che cambia e' il motivo: qui i tasti 7-9 fanno navigazione
+*perche' sono gli unici che si trovano al tatto*. Su un modello con nove schermi
+la scelta resterebbe funzionante ma arbitraria — e chi lo adatta farebbe bene a
+ripensarla invece di ereditarla.
+
 ### Nomi dei profili
 
 OpenDeck raggruppa i profili in cartelle se prefissi il nome con

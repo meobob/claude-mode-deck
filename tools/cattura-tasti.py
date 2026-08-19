@@ -5,6 +5,25 @@
 
 Sola lettura: non tocca niente, non scrive fuori dal proprio log.
 Uscita: Ctrl+C.
+
+DUE COSE DA SAPERE PRIMA DI LEGGERE UNA CATTURA, tutte e due imparate
+sbagliando il 18/08/2026:
+
+1. **La riga di pausa NON separa le pressioni.** Segnala solo che fra due byte
+   e' passato piu' di mezzo secondo. Un tasto configurato con `down` e `up` —
+   il trucco che questo progetto usa per dare una pausa a `Esc Esc` — manda un
+   byte alla pressione e uno al rilascio, e se lo tieni premuto a lungo la
+   pausa cade IN MEZZO a una pressione sola. Il 18/08 questo ha prodotto una
+   diagnosi sbagliata: si erano lette raffiche di tre colpi dove c'erano due
+   pressioni normali.
+
+   Il criterio giusto e' **contare i byte**: un tasto `down`/`up` ne produce
+   sempre un numero PARI. Da qui la riga di pausa dice quanto e' durata, e in
+   fondo si trova il totale.
+
+2. **Il log si accumula.** Fino al 19/08/2026 si apriva in modalita' `w` e ogni
+   avvio cancellava la cattura precedente: si perdeva la misura di prima
+   proprio quando serviva confrontarla con quella nuova.
 """
 import os
 import sys
@@ -41,29 +60,41 @@ def main():
     new[6][termios.VTIME] = 0
     termios.tcsetattr(fd, termios.TCSANOW, new)
 
-    log = open(LOG, "w", buffering=1)
-    log.write("# cattura tasti deck - avviata %s\n"
+    # In coda, non in sovrascrittura: una cattura non deve cancellare quella
+    # con cui la vuoi confrontare.
+    nuovo = not os.path.exists(LOG)
+    log = open(LOG, "a", buffering=1)
+    log.write("\n# ===== cattura avviata %s =====\n"
               % time.strftime("%Y-%m-%d %H:%M:%S"))
 
     print("\r\n  Cattura attiva. Questa finestra deve avere il FOCUS.")
     print("  Premi i tasti del deck. Ctrl+C per finire.\r")
+    print("  Le righe di pausa dicono quanto silenzio c'e' stato, NON dove\r")
+    print("  finisce una pressione: un tasto down/up manda un byte alla\r")
+    print("  pressione e uno al rilascio. Conta i byte, sono sempre pari.\r")
+    if not nuovo:
+        print("  Il log si accumula: le catture precedenti restano.\r")
     print("  " + "-" * 56 + "\r\n")
 
     last = None
+    byte_totali = [0]
     try:
         while True:
             data = os.read(fd, 64)
             if not data:
                 break
             now = time.time()
-            # piu' di mezzo secondo di silenzio = pressione nuova
+            # Piu' di mezzo secondo di silenzio. NON vuol dire "pressione
+            # nuova": con un tasto down/up la pausa cade dentro la pressione.
             if last is not None and now - last > 0.5:
-                sys.stdout.write("\r\n")
-                log.write("---\n")
+                pausa = now - last
+                sys.stdout.write("\r\n  [pausa %.2f s]\r\n" % pausa)
+                log.write("--- pausa %.2f s ---\n" % pausa)
             last = now
             stamp = time.strftime("%H:%M:%S", time.localtime(now))
             stamp += ".%03d" % int((now % 1) * 1000)
             for b in data:
+                byte_totali[0] += 1
                 r = caret(b)
                 sys.stdout.write(r)
                 log.write("%s  0x%02x  %s\n" % (stamp, b, r))
@@ -72,9 +103,16 @@ def main():
         pass
     finally:
         termios.tcsetattr(fd, termios.TCSANOW, old)
-        log.write("# fine %s\n" % time.strftime("%Y-%m-%d %H:%M:%S"))
+        n = byte_totali[0]
+        parita = "pari" if n % 2 == 0 else "DISPARI"
+        log.write("# fine %s — %d byte (%s)\n"
+                  % (time.strftime("%Y-%m-%d %H:%M:%S"), n, parita))
         log.close()
-        print("\r\n\r\n  Fine. Log in:\r\n  %s\r" % LOG)
+        print("\r\n\r\n  Fine. %d byte catturati (%s).\r" % (n, parita))
+        if n % 2:
+            print("  Numero dispari: se stavi provando solo tasti down/up,\r")
+            print("  una pressione e' andata persa o ne hai premuto un altro.\r")
+        print("  Log (in coda al precedente):\r\n  %s\r" % LOG)
 
 
 if __name__ == "__main__":

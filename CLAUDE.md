@@ -61,9 +61,11 @@ hook/cc-activity.mjs              hook, stato di attivita' (lavora/aspetta/finit
 hook/cc-observe.mjs               hook di sola osservazione, temporaneo
 io.github.meobob.ccmode.sdPlugin/        plugin OpenDeck (manifest, plugin.mjs, icone)
   └── sendkeys.py                 manda una combinazione via XTEST
+scripts/installa.sh               installa hook e plugin (livello 1, portabile)
 scripts/check.sh                  diagnostica in sola lettura
 scripts/install-hook.sh           installa l'hook, idempotente
 scripts/profili-genera.py         come sono stati prodotti i profili in uso
+scripts/profili-da-zero.py        genera i profili da zero (livello 2)
 scripts/profili-installa.sh       li installa, con backup e OpenDeck fermo
 scripts/manopole-installa.py      programma le tre manopole (di suo non scrive)
 scripts/volume.sh                 volume di sistema per la manopola centrale
@@ -73,6 +75,7 @@ scripts/attivita-installa.py      mette il tasto Activity sullo slot 2
 tools/cattura-tasti.py            registra i byte che arrivano dal deck
 tools/genera-multiaction.py       come si costruisce un profilo multi-action
 tools/prova-plugin.py             prova il plugin contro un finto server OpenDeck
+tools/prova-home-pulita.sh        prova gli script in un HOME vuoto
 keys/                             17 icone PNG per i tasti (+ provino.png)
 backup/                           profili OpenDeck salvati (ha un suo README, non si pubblica)
 make_icons.py                     rigenera le icone di stato del plugin

@@ -1,17 +1,36 @@
-# Claude Code Mode — permission-mode indicator for Ajazz AKP03E / OpenDeck
+# Claude Code on a stream deck — indicators for Ajazz AKP03E / OpenDeck
 
-One key on your stream deck shows which Claude Code **permission mode** is
-active, by colour and by shape. Pressing it sends `Shift+Tab` to the focused
-window, so the same key both shows the mode and changes it.
+Two keys on your stream deck show what Claude Code is doing. One shows the
+active **permission mode** by colour and shape, and pressing it sends
+`Shift+Tab` to the focused window, so the same key both shows the mode and
+changes it. The other shows **activity**: working, waiting for you, done, idle
+— the "waiting for you" state blinks red, because it is the only one that asks
+something of you.
 
 **What it does not do — read this before installing:**
 
-- **Not real time.** Hooks fire on events, not on Shift+Tab: change mode and do
-  nothing, and the key stays stale until your next prompt or tool call.
-- **One session at a time.** Single state file — with two Claude Code sessions
-  open, the last one to write wins.
+- **The mode is not real time.** Hooks fire on events, not on Shift+Tab: change
+  mode and do nothing, and the key stays stale until your next prompt or tool
+  call. The activity indicator does not have this problem: working, finishing
+  and going idle *are* events.
 - **Keystrokes go to the focused window**, not to Claude Code as such. Browser
   focused, browser gets the `Shift+Tab`.
+- **With several sessions open, the activity key shows the most severe state**
+  and does not tell you which session it came from.
+
+## Two levels, and only one of them is a promise
+
+**Level 1 — the indicators.** Two hooks and one plugin. Node only, no
+assumptions about your hardware, your terminal or your keyboard. This is the
+part that should travel: `./scripts/installa.sh`.
+
+**Level 2 — the key layout.** 27 slots, 16 icons, three knobs. It has real
+assumptions — PulseAudio for the volume knob, gnome-terminal's zoom shortcuts,
+a keyboard where `+` is unshifted — and `./scripts/profili-da-zero.py` checks
+them at start-up. Assumptions that do not hold **empty the slot that depends on
+them and say so**, rather than leaving a key that silently does nothing.
+
+Level 1 is tested. Level 2 is tested *here*. See below.
 
 **Requirements:** Linux on **X11** · **OpenDeck ≥ 2.5.0** with the
 `opendeck-akp03` plugin · **Node.js ≥ 22**, natively installed (not Flatpak) ·
@@ -19,7 +38,25 @@ window, so the same key both shows the mode and changes it.
 
 **Verified on:** Linux Mint 22.3 (noble), X11 · Ajazz AKP03E rev. 2
 (`0300:3002`) · OpenDeck 2.14.0 · AKP03 plugin 0.10.1 · Node 22.23.2 from
-NodeSource. Never tried on Windows, never tried on Wayland.
+NodeSource · gnome-terminal · Italian keyboard layout · PulseAudio via `pactl`.
+
+**Never tried, and I will not claim otherwise:**
+
+| | Status |
+|---|---|
+| A second deck, of any model | **never** — there is one deck, and everything below was measured on it |
+| Any other AKP03-family model | never. The plugin treats all thirteen as 3×3 keys + 3 knobs (`ROW_COUNT`, `COL_COUNT`, `ENCODER_COUNT` are module constants in its `src/mappings.rs`), so the layout should fit — but "should" is an inference, not a measurement |
+| Windows, macOS | never |
+| Wayland | never. `sendkeys.py` uses XTEST; the indicators would still work, sending keys probably would not |
+| Any terminal other than gnome-terminal | never. Only the zoom knob depends on it, and it empties itself if the shortcuts do not check out |
+| Any keyboard layout other than Italian | never. Only `Ctrl` + `+` on the zoom knob depends on it |
+| PipeWire, plain ALSA, no audio | never. Only the volume knob depends on it, and it empties itself if `pactl` is missing |
+
+What *is* covered without a second deck: `tools/prova-plugin.py` drives the
+plugin against a fake OpenDeck server (24 checks, including several sessions at
+once), and `tools/prova-home-pulita.sh` runs the installers against an empty
+`HOME` to check that every failure explains what is missing instead of throwing
+a stack trace.
 
 ---
 

@@ -92,7 +92,7 @@ Serve la versione **2.5.0 o superiore**: è il minimo richiesto dal plugin AKP03
 AppImage perché tendono a dare problemi.
 
 **Preferisci il `.deb` al Flatpak.** Col Flatpak il plugin indicatore gira nel
-sandbox e deve leggere `~/.claude/cc-mode.json`: non è verificato se i permessi
+sandbox e deve leggere `~/.claude/cc-state/`: non è verificato se i permessi
 di default lo consentano, e potrebbe servire un `flatpak override`. Col `.deb`
 il problema non esiste.
 
@@ -181,6 +181,11 @@ valido si rifiuta di scrivere.
 
 ## Fase 5 — Plugin indicatore
 
+**La via breve, dal 19/08/2026:** `./scripts/installa.sh` fa tutto — controlla
+i prerequisiti, copia il plugin e registra i due hook — e se qualcosa manca si
+ferma dicendo cosa e come rimediare. `--dry` mostra il piano senza scrivere.
+Il resto di questa fase descrive gli stessi passi a mano.
+
 La cartella plugin è quella che `check.sh` ha trovato. Sostituisci
 `<PLUGINS_DIR>` con quel percorso:
 
@@ -188,8 +193,8 @@ La cartella plugin è quella che `check.sh` ha trovato. Sostituisci
 cp -r io.github.meobob.ccmode.sdPlugin <PLUGINS_DIR>/
 ```
 
-`[UTENTE]` Riavvia OpenDeck. Poi trascina su un tasto l'azione
-**Permission mode**, nella categoria *Claude Code*.
+`[UTENTE]` Riavvia OpenDeck. Poi trascina su un tasto le azioni
+**Permission mode** e **Activity**, nella categoria *Claude Code*.
 
 **Criterio di successo:** il tasto mostra qualcosa. All'inizio sarà grigio con
 un `?` — è corretto: significa che il file di stato non esiste ancora.
@@ -213,7 +218,8 @@ Diagnostica:
 
 ```bash
 ./scripts/check.sh                                    # stato complessivo
-cat ~/.claude/cc-mode.json                            # cosa ha scritto l'hook
+cat ~/.claude/cc-state/mode/*.json                    # cosa ha scritto l'hook
+cat ~/.claude/cc-state/activity/*.json                # idem, per l'attività
 tail -20 <PLUGINS_DIR>/io.github.meobob.ccmode.sdPlugin/plugin.log   # cosa ha letto il plugin
 ```
 
@@ -228,15 +234,22 @@ il tasto no, è il plugin; se il JSON è fermo, è l'hook.
 |---|---|
 | Il deck non compare in OpenDeck | regole udev, poi riavvio di OpenDeck dopo il ricollegamento |
 | L'azione non è nella lista | il manifest non è stato letto: riavvia OpenDeck, controlla il nome della cartella `io.github.meobob.ccmode.sdPlugin` |
-| Il tasto resta grigio col `?` | `~/.claude/cc-mode.json` esiste? se no, l'hook non è mai partito → `/hooks` in Claude Code |
+| Il tasto resta grigio col `?` | c'è qualcosa in `~/.claude/cc-state/mode/`? se no, l'hook non è mai partito → `/hooks` in Claude Code |
 | Il tasto non si aggiorna mai | `plugin.log`: se è vuoto il plugin non è partito (node non trovato?), se dice "Modalità ->" il problema è a valle |
 | Il tasto è indietro di un messaggio | non è un guasto, è il limite descritto sopra |
 
 ## Come disinstallare
 
 ```bash
-rm -f ~/.claude/hooks/cc-mode.mjs ~/.claude/cc-mode.json
-# ripristina il backup più recente:
+# 1. togli le registrazioni: il backup più recente di settings.json è di prima
+#    dell'ultima installazione
 cp "$(ls -t ~/.claude/settings.json.bak.* | head -1)" ~/.claude/settings.json
+
+# 2. togli hook, stato e plugin
+rm -f  ~/.claude/hooks/cc-mode.mjs ~/.claude/hooks/cc-activity.mjs
+rm -rf ~/.claude/cc-state
 rm -rf <PLUGINS_DIR>/io.github.meobob.ccmode.sdPlugin
 ```
+
+L'hook dell'attività ha anche un suo comando che toglie solo quello, senza
+toccare il resto: `./scripts/install-activity.sh --rimuovi`.
