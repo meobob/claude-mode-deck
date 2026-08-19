@@ -34,6 +34,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 // ---------------------------------------------------------------- config ---
 
 const ACTION_UUID = "io.github.meobob.ccmode.indicator";
+const ACTIVITY_UUID = "io.github.meobob.ccmode.activity";
 
 const STATE_FILE =
   process.env.CC_MODE_STATE_FILE || join(homedir(), ".claude", "cc-mode.json");
@@ -47,6 +48,47 @@ const POLL_MS = Number(process.env.CC_MODE_POLL_MS || 500);
 const STALE_AFTER_MS = Number(process.env.CC_MODE_STALE_MS || 0);
 
 const LOG_FILE = join(HERE, "plugin.log");
+
+// --- indicatore di attivita' -----------------------------------------------
+//
+// Seconda azione, file di stato SEPARATO e hook separato: due hook che
+// scrivono lo stesso file sarebbe una corsa. La mappa evento -> stato sta in
+// hook/cc-activity.mjs ed e' costruita sul log di eventi veri raccolto il
+// 19/08/2026, non sulla documentazione.
+const ACTIVITY_STATE_FILE =
+  process.env.CC_ACTIVITY_STATE_FILE ||
+  join(homedir(), ".claude", "cc-activity.json");
+
+// Ogni quanto alternare i due fotogrammi di "aspetta" (ms).
+const BLINK_MS = Number(process.env.CC_ACTIVITY_BLINK_MS || 600);
+
+// Dopo quanti ms senza aggiornamenti tornare a "inattivo". 0 = mai, ed e' il
+// default: una singola chiamata a uno strumento puo' durare minuti senza
+// produrre eventi, e far scadere "lavora" mentre lavora sarebbe peggio del
+// male che cura. Resta a disposizione per chi lascia sessioni uccise a meta'.
+const ACTIVITY_STALE_MS = Number(process.env.CC_ACTIVITY_STALE_MS || 0);
+
+/**
+ * Mappa stato -> aspetto del tasto.
+ *
+ *  - blu     = sta lavorando
+ *  - rosso   = ti aspetta, ed e' l'unico che LAMPEGGIA: e' il solo stato che
+ *              chiede un'azione a te, e deve staccarsi dagli altri anche con
+ *              la coda dell'occhio
+ *  - verde   = ha finito. Scade su un EVENTO e non su un timer: torna grigio
+ *              quando arriva la notifica di inattivita' di Claude Code,
+ *              misurata a ~57 s dall'ultimo movimento
+ *  - grigio  = nessuna sessione, o sessione ferma da un po'
+ */
+const ACTIVITY = {
+  idle: { file: "act-idle.png", title: "" },
+  work: { file: "act-work.png", title: "LAVORA" },
+  wait: { file: "act-wait.png", title: "ASPETTA" },
+  done: { file: "act-done.png", title: "FINITO" },
+};
+
+// Fotogramma spento del lampeggio. Non e' uno stato: non compare in ACTIVITY.
+const ACTIVITY_OFF = { file: "act-wait-off.png", title: "ASPETTA" };
 
 // Premere l'indicatore cicla la modalita'. CC_MODE_CYCLE=0 lo riporta in sola
 // lettura, senza toccare il codice.
@@ -100,10 +142,10 @@ function log(...parts) {
   }
 }
 
-/** Carica una volta sola le PNG degli stati come data URL base64. */
-function loadImages() {
+/** Carica una volta sola le PNG di una mappa stato -> file, come data URL. */
+function loadImagesFrom(spec) {
   const out = {};
-  for (const [mode, cfg] of Object.entries(MODES)) {
+  for (const [mode, cfg] of Object.entries(spec)) {
     const path = join(HERE, "states", cfg.file);
     try {
       out[mode] = `data:image/png;base64,${readFileSync(path).toString("base64")}`;
@@ -112,6 +154,11 @@ function loadImages() {
     }
   }
   return out;
+}
+
+/** Le immagini dell'indicatore di modalita'. */
+function loadImages() {
+  return loadImagesFrom(MODES);
 }
 
 /** Legge il file di stato. Ritorna sempre una modalita' valida. */
@@ -126,6 +173,21 @@ function readMode() {
     return data.mode;
   } catch {
     return "unknown";
+  }
+}
+
+/** Legge il file di stato dell'attivita'. Ritorna sempre uno stato valido. */
+function readActivity() {
+  if (!existsSync(ACTIVITY_STATE_FILE)) return "idle";
+  try {
+    const data = JSON.parse(readFileSync(ACTIVITY_STATE_FILE, "utf8"));
+    if (!Object.prototype.hasOwnProperty.call(ACTIVITY, data.state)) return "idle";
+    if (ACTIVITY_STALE_MS > 0 && typeof data.ts === "number") {
+      if (Date.now() - data.ts > ACTIVITY_STALE_MS) return "idle";
+    }
+    return data.state;
+  } catch {
+    return "idle";
   }
 }
 
@@ -158,9 +220,16 @@ if (typeof WebSocket === "undefined") {
 }
 
 const IMAGES = loadImages();
+const ACTIVITY_IMAGES = loadImagesFrom({ ...ACTIVITY, waitOff: ACTIVITY_OFF });
 
 /** context -> ultima modalita' inviata (per non spammare il socket). */
 const contexts = new Map();
+
+/** context -> ultimo stato di attivita' inviato. */
+const activityContexts = new Map();
+
+/** Fotogramma corrente del lampeggio di "aspetta". */
+let blinkOn = true;
 
 const ws = new WebSocket(`ws://localhost:${port}`);
 
@@ -220,6 +289,26 @@ function markPending(context) {
 }
 
 /**
+ * Disegna il tasto dell'attivita'.
+ *
+ * Differenza dall'altro `paint`: "aspetta" va ridisegnato anche quando lo
+ * stato NON cambia, perche' e' il lampeggio a cambiare fotogramma. Per questo
+ * chi lampeggia passa `force`.
+ */
+function paintActivity(context, state, { force = false } = {}) {
+  if (!force && activityContexts.get(context) === state) return;
+  activityContexts.set(context, state);
+
+  const cfg = ACTIVITY[state] ?? ACTIVITY.idle;
+  const chiave = state === "wait" && !blinkOn ? "waitOff" : state;
+  const image = ACTIVITY_IMAGES[chiave] ?? ACTIVITY_IMAGES.idle;
+  if (image) {
+    send({ event: "setImage", context, payload: { image, target: 0 } });
+  }
+  send({ event: "setTitle", context, payload: { title: cfg.title, target: 0 } });
+}
+
+/**
  * Manda la combinazione che cicla la modalita'.
  *
  * Non aspettiamo l'esito: che abbia funzionato lo dice il file di stato al
@@ -260,18 +349,34 @@ ws.addEventListener("message", (event) => {
 
   switch (msg.event) {
     case "willAppear":
+      if (msg.action === ACTIVITY_UUID) {
+        activityContexts.set(msg.context, null); // null = mai dipinto
+        paintActivity(msg.context, readActivity(), { force: true });
+        return;
+      }
       if (msg.action !== ACTION_UUID) return;
       contexts.set(msg.context, null); // null = mai dipinto -> forza il primo paint
       paint(msg.context, readMode(), { force: true });
       break;
 
     case "willDisappear":
+      if (msg.action === ACTIVITY_UUID) {
+        activityContexts.delete(msg.context);
+        return;
+      }
       if (msg.action !== ACTION_UUID) return;
       contexts.delete(msg.context);
       clearPending(msg.context);
       break;
 
     case "keyDown":
+      // L'attivita' e' di sola lettura: premerla ridisegna e basta. Serve
+      // soprattutto al limite noto n. 4 — un tasto nato mentre il plugin gira
+      // non riceve `willAppear` e resta "?" finche' non lo premi una volta.
+      if (msg.action === ACTIVITY_UUID) {
+        paintActivity(msg.context, readActivity(), { force: true });
+        return;
+      }
       if (msg.action !== ACTION_UUID) return;
       if (CYCLE_ON_PRESS) {
         cycleMode();
@@ -304,3 +409,31 @@ setInterval(() => {
   log("Modalita' ->", mode);
   paintAll(mode);
 }, POLL_MS);
+
+let lastActivity = null;
+setInterval(() => {
+  const state = readActivity();
+  if (state === lastActivity) return;
+  lastActivity = state;
+  // Uscendo dall'attesa il lampeggio riparte acceso, cosi' la prossima volta
+  // non comincia dal fotogramma spento.
+  if (state !== "wait") blinkOn = true;
+  log("Attivita' ->", state);
+  for (const context of activityContexts.keys()) {
+    paintActivity(context, state, { force: true });
+  }
+}, POLL_MS);
+
+// Lampeggio di "aspetta". Gira a vuoto se nessun tasto e' in attesa: nessun
+// messaggio sul socket, nessun consumo.
+setInterval(() => {
+  let inAttesa = false;
+  for (const state of activityContexts.values()) {
+    if (state === "wait") inAttesa = true;
+  }
+  if (!inAttesa) return;
+  blinkOn = !blinkOn;
+  for (const [context, state] of activityContexts) {
+    if (state === "wait") paintActivity(context, state, { force: true });
+  }
+}, BLINK_MS);

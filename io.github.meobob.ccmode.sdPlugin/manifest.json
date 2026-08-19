@@ -12,7 +12,9 @@
 			"UUID": "io.github.meobob.ccmode.indicator",
 			"Tooltip": "Mostra la permission mode attiva di Claude Code; premi per cambiarla",
 			"Icon": "states/unknown",
-			"Controllers": ["Keypad"],
+			"Controllers": [
+				"Keypad"
+			],
 			"SupportedInMultiActions": false,
 			"States": [
 				{
@@ -26,11 +28,39 @@
 					"FontSize": "13"
 				}
 			]
+		},
+		{
+			"Name": "Activity",
+			"UUID": "io.github.meobob.ccmode.activity",
+			"Tooltip": "Mostra se Claude Code sta lavorando, ha finito o ti sta aspettando",
+			"Icon": "states/act-idle",
+			"Controllers": [
+				"Keypad"
+			],
+			"SupportedInMultiActions": false,
+			"States": [
+				{
+					"Image": "states/act-idle",
+					"Name": "Activity",
+					"Title": "",
+					"ShowTitle": true,
+					"TitleColor": "#FFFFFF",
+					"TitleAlignment": "bottom",
+					"FontStyle": "Bold",
+					"FontSize": "13"
+				}
+			]
 		}
 	],
 	"OS": [
-		{ "Platform": "linux" },
-		{ "Platform": "windows" },
-		{ "Platform": "mac" }
+		{
+			"Platform": "linux"
+		},
+		{
+			"Platform": "windows"
+		},
+		{
+			"Platform": "mac"
+		}
 	]
 }

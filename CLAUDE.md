@@ -25,7 +25,9 @@ sola lettura.
 ## Struttura
 
 ```
-hook/cc-mode.mjs                  hook di Claude Code
+hook/cc-mode.mjs                  hook di Claude Code, permission mode
+hook/cc-activity.mjs              hook, stato di attivita' (lavora/aspetta/finito)
+hook/cc-observe.mjs               hook di sola osservazione, temporaneo
 io.github.meobob.ccmode.sdPlugin/        plugin OpenDeck (manifest, plugin.mjs, icone)
   └── sendkeys.py                 manda una combinazione via XTEST
 scripts/check.sh                  diagnostica in sola lettura
@@ -34,11 +36,16 @@ scripts/profili-genera.py         come sono stati prodotti i profili in uso
 scripts/profili-installa.sh       li installa, con backup e OpenDeck fermo
 scripts/manopole-installa.py      programma le tre manopole (di suo non scrive)
 scripts/volume.sh                 volume di sistema per la manopola centrale
+scripts/install-activity.sh       installa e registra l'hook di attivita'
+scripts/install-observe.sh        installa/rimuove l'osservatore
+scripts/attivita-installa.py      mette il tasto Activity sullo slot 2
 tools/cattura-tasti.py            registra i byte che arrivano dal deck
 tools/genera-multiaction.py       come si costruisce un profilo multi-action
+tools/prova-plugin.py             prova il plugin contro un finto server OpenDeck
 keys/                             17 icone PNG per i tasti (+ provino.png)
 backup/                           profili OpenDeck salvati (ha un suo README, non si pubblica)
 make_icons.py                     rigenera le icone di stato del plugin
+make_activity_icons.py            rigenera le icone dell'indicatore di attivita'
 make_key_icons.py                 rigenera le icone dei tasti
 LAYOUT.md                         cosa va su ogni tasto
 INSTALL.md                        procedura di installazione
@@ -143,7 +150,12 @@ distanza: a occhio non si vedeva.
    **Misurato il 15/08/2026**: invio del messaggio alle 20:03:37, ridisegno del
    tasto alle 20:03:38.090. Vale anche premendo l'indicatore stesso — per
    questo mostra un puntino di attesa che scade dopo 6 secondi.
-2. Un solo file di stato: con più sessioni in parallelo vince l'ultima.
+2. Un solo file di stato per indicatore: con più sessioni in parallelo vince
+   l'ultima. **Misurato il 19/08/2026** sull'indicatore di attività, dove pesa
+   molto più che sulla modalità: una sessione mostrava `ti aspetta` con una
+   richiesta di permesso aperta a schermo, e la notifica di inattività di
+   *un'altra* sessione l'ha sovrascritta dopo 18 secondi. Lo stato che conta di
+   più è anche quello più fragile.
 3. Il deck manda tasti alla finestra attiva: il terminale deve avere il focus.
    Vale anche per `sendkeys.py`, che usa la stessa strada (XTEST).
 4. Un tasto appena creato resta `?` finché non lo premi una volta. Sparisce al

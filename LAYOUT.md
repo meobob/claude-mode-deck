@@ -112,7 +112,7 @@ Tasti 1-6, cioe' le due righe con schermo.
 | # | Tasto | Azione OpenDeck | Cosa fa | Icona |
 |---|---|---|---|---|
 | 1 | Voce | Hotkey `Space` | Dettatura. Richiede `/voice tap` attivo | `keys/1-guida/1-voce.png` |
-| 2 | — | *slot vuoto nel profilo* | Era `Shift+Tab`, oggi ridondante col tasto 6 | `2-modo.png`, inutilizzata |
+| 2 | Attivita' | Azione *Activity* | Mostra se Claude lavora, ha finito o ti aspetta | — |
 | 3 | Stop | Hotkey `Esc` | Interrompe Claude a meta' turno | `3-stop.png` |
 | 4 | Rewind | `Simulate Input`: `Esc` su `down`, `Esc` su `up` | Menu rewind (a input vuoto). Basta un tocco | `4-rewind.png` |
 | 5 | Task | Hotkey `Ctrl+T` | Mostra o nasconde la checklist | `5-task.png` |
@@ -120,12 +120,33 @@ Tasti 1-6, cioe' le due righe con schermo.
 
 **Il tasto 2 e il tasto 6 facevano la stessa cosa.** Dal 15 agosto 2026 premere
 l'indicatore cicla le modalita' come `Shift+Tab`, quindi il tasto 2 e' diventato
-ridondante ed e' stato **svuotato**: nel profilo `keys[1]` e' `null`. Lo slot e'
-libero e non e' stato ancora riassegnato.
+ridondante ed e' stato svuotato. **Dal 19/08/2026 lo slot ospita l'indicatore di
+attivita'**: era l'unico libero, ed e' la ragione per cui era stato tenuto tale.
 
-Verificato il 18/08/2026 rileggendo il profilo. E' anche il motivo per cui torna
-il conto dei 17 tasti che trasmettono: **cinque** in pagina 1, non sei, piu' sei
-e sei.
+I tasti che *trasmettono* restano diciassette — **quattro** in pagina 1 piu' sei
+e sei: i tasti 2 e 6 sono indicatori, non mandano niente al terminale (il 6
+manda `Shift+Tab` solo se premuto).
+
+### Il tasto 2 — attivita'
+
+Sola lettura, quattro stati. La mappa evento -> stato sta in
+`hook/cc-activity.mjs` ed e' costruita su un log di eventi veri raccolto il
+19/08/2026, non sulla documentazione.
+
+| Stato | Colore e forma | Da quale evento |
+|---|---|---|
+| lavora | blu, tre puntini | `UserPromptSubmit`, `PreToolUse`, `PostToolUse` |
+| ti aspetta | **rosso lampeggiante**, punto esclamativo | `PermissionRequest` |
+| ha finito | verde, spunta cerchiata | `Stop` |
+| inattivo | grigio, anello vuoto | `SessionStart`, `SessionEnd`, `Notification(idle_prompt)` |
+
+Il verde **non scade su un timer**: torna grigio quando arriva la notifica di
+inattivita' di Claude Code, misurata a 57 s dall'ultimo movimento. Un timeout
+guidato da un evento invece che da un numero scelto a caso.
+
+Il rosso e' l'unico che lampeggia, perche' e' l'unico che chiede un'azione a te.
+In modalita' `auto` non scatta mai, e in `manual` non basta un comando
+innocuo: `date` passa liscio, ci vuole uno strumento con effetti.
 
 Perche' non si e' invece messo tutto sul tasto 6 impilando due azioni: si e'
 provato, e non funziona. Vedi "Multi Action" piu' avanti.
