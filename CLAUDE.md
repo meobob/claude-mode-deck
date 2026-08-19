@@ -149,6 +149,14 @@ della classe `WebSocket`:
 sessione proponi le modifiche a `smartdeck_CONTEXT.md` nel riepilogo; non
 riscrivere il file. È già successo che due copie divergessero.
 
+**Un comando che finisce in un documento va eseguito almeno una volta, o
+dichiarato come non provato.** È successo due volte in tre giorni. Il 17/08 con
+`genera-multiaction.py`. Il 19/08 col comando di disinstallazione appena scritto
+in `INSTALL.md`: usava `install-hook.sh --rimuovi`, opzione che non esiste — e
+quello script le opzioni sconosciute le ignora e **installa**. Chi avesse
+seguito quella riga per disinstallare avrebbe reinstallato. Un comando scritto e
+mai eseguito è una supposizione con l'aspetto di un'istruzione.
+
 **Prima di `unzip -o` su un archivio del progetto, fai `unzip -l`.** Il browser
 rinomina i download quando il nome è occupato, e un archivio vecchio riporta
 indietro il progetto di settimane. È già successo.
