@@ -62,11 +62,46 @@ Profile` deve poter puntare a un profilo che esiste gia'.
 
 ### Cambio automatico di profilo
 
-OpenDeck sa passare a un profilo quando la finestra di una certa applicazione
-diventa attiva. Vale la pena configurarlo sul tuo terminale: il deck mostra i
-tasti di Claude Code solo quando serve, e torna a `Default` quando sei altrove.
-Non risolve il vincolo del focus — i tasti vanno comunque alla finestra attiva —
-ma almeno smetti di vedere comandi inutili quando sei nel browser.
+Configurato e provato il 19/08/2026. Non risolve il vincolo del focus — i tasti
+vanno comunque alla finestra attiva — ma smetti di vedere comandi inutili
+quando sei altrove.
+
+**Non sta nelle impostazioni**, dove verrebbe naturale cercarlo. Sta nella
+gestione profili: menu a tendina del profilo **in alto a destra** -> ultima
+voce **`Edit...`** -> nella finestra che si apre, il pulsante **`Application
+profiles`**. Lì si scelgono `Select application...` e `Select profile...`.
+
+Tre cose che non si indovinano:
+
+1. **L'elenco delle applicazioni non e' quello delle applicazioni installate**,
+   ma quello delle finestre che OpenDeck ha visto diventare attive mentre
+   girava: controlla il focus ogni 250 ms e lo costruisce strada facendo. Se la
+   tua non c'e', dalle il focus e torna indietro.
+2. **Il nome registrato e' la classe della finestra, non il processo.**
+   gnome-terminal compare come `Gnome-terminal`.
+3. **Serve anche un profilo predefinito**, altrimenti funziona in un verso
+   solo: entrando sul terminale il deck passa a `Claude/1-guida`, uscendo resta
+   com'e'. Si imposta nello stesso pannello, voce `Default profile`. Qui e' un
+   profilo vuoto.
+
+Il file e' `~/.config/opendeck/applications.json`, nella forma
+applicazione -> deck -> profilo, con **un profilo solo per applicazione**:
+
+```json
+{
+  "Gnome-terminal":   { "n3-4250D2784745": "Claude/1-guida" },
+  "opendeck_default": { "n3-4250D2784745": "5" }
+}
+```
+
+Il guadagno vero non e' risparmiare comandi inutili: e' che il deck diventa un
+**indicatore del focus**. Se mostra i tasti di Claude, il focus e' sul
+terminale — la condizione da cui dipende ogni tasto di questo progetto.
+
+Due effetti collaterali da conoscere. Ogni volta che il terminale riprende il
+focus il deck torna a `1-guida`: la pagina su cui eri non viene ricordata. E il
+profilo predefinito, essendo vuoto, non ha i tre tasti di navigazione, quindi
+da lì si torna indietro solo ridando il focus al terminale.
 
 ---
 
@@ -77,16 +112,20 @@ Tasti 1-6, cioe' le due righe con schermo.
 | # | Tasto | Azione OpenDeck | Cosa fa | Icona |
 |---|---|---|---|---|
 | 1 | Voce | Hotkey `Space` | Dettatura. Richiede `/voice tap` attivo | `keys/1-guida/1-voce.png` |
-| 2 | Modo | Hotkey `Shift+Tab` | Cicla le modalita' permessi | `2-modo.png` |
+| 2 | — | *slot vuoto nel profilo* | Era `Shift+Tab`, oggi ridondante col tasto 6 | `2-modo.png`, inutilizzata |
 | 3 | Stop | Hotkey `Esc` | Interrompe Claude a meta' turno | `3-stop.png` |
-| 4 | Rewind | Multi-azione: `Esc`, pausa ~120 ms, `Esc` | Menu rewind (a input vuoto) | `4-rewind.png` |
+| 4 | Rewind | `Simulate Input`: `Esc` su `down`, `Esc` su `up` | Menu rewind (a input vuoto). Basta un tocco | `4-rewind.png` |
 | 5 | Task | Hotkey `Ctrl+T` | Mostra o nasconde la checklist | `5-task.png` |
 | 6 | Stato | Azione *Permission mode* | Mostra la modalita' **e la cicla** se premuto | — |
 
-**Il tasto 2 e il tasto 6 fanno la stessa cosa.** Dal 15 agosto 2026 premere
-l'indicatore cicla le modalita' come `Shift+Tab`, quindi il tasto 2 e'
-ridondante e il suo slot e' libero. Non e' stato ancora riassegnato: il profilo
-non e' stato toccato.
+**Il tasto 2 e il tasto 6 facevano la stessa cosa.** Dal 15 agosto 2026 premere
+l'indicatore cicla le modalita' come `Shift+Tab`, quindi il tasto 2 e' diventato
+ridondante ed e' stato **svuotato**: nel profilo `keys[1]` e' `null`. Lo slot e'
+libero e non e' stato ancora riassegnato.
+
+Verificato il 18/08/2026 rileggendo il profilo. E' anche il motivo per cui torna
+il conto dei 17 tasti che trasmettono: **cinque** in pagina 1, non sei, piu' sei
+e sei.
 
 Perche' non si e' invece messo tutto sul tasto 6 impilando due azioni: si e'
 provato, e non funziona. Vedi "Multi Action" piu' avanti.
@@ -95,7 +134,7 @@ provato, e non funziona. Vedi "Multi Action" piu' avanti.
 
 | # | Tasto | Azione OpenDeck | Cosa fa |
 |---|---|---|---|
-| 1 | Storico | Hotkey `Ctrl+O` | Apre il transcript viewer |
+| 1 | Storico | Hotkey `Ctrl+O` | Apre **e chiude** il transcript viewer: e' un interruttore |
 | 2 | Cerca | Hotkey `Ctrl+R` | Ricerca nella cronologia dei prompt |
 | 3 | Editor | Hotkey `Ctrl+G` | Apre il prompt nell'editor esterno |
 | 4 | Stash | Hotkey `Ctrl+S` | Mette da parte il prompt; ripremuto lo ripristina |
@@ -109,20 +148,87 @@ risposta, mentre quasi sempre vuoi scriverci dietro una domanda.
 
 | # | Tasto | Azione OpenDeck | Cosa fa |
 |---|---|---|---|
-| 1 | Modello | Hotkey `Alt+P` | Cambia modello senza perdere il prompt |
-| 2 | Thinking | Hotkey `Alt+T` | Extended thinking on/off |
+| 1 | Modello | Hotkey `Alt+P` | **Apre** il selettore dei modelli: scegli e confermi con Invio |
+| 2 | Thinking | Hotkey `Alt+T` | **Apre** la finestra del thinking: scegli e confermi con Invio |
 | 3 | Fast | Testo `/fast` + Invio | Fast mode on/off |
-| 4 | Sfondo | Hotkey `Ctrl+B` | Manda in background il comando in corso |
-| 5 | Ferma | Multi-azione: `Ctrl+X` `Ctrl+K`, pausa, di nuovo | Ferma i subagent in background |
-| 6 | Config | Testo `/config` + Invio | Impostazioni |
+| 4 | Sfondo | Hotkey `Ctrl+B` | Manda in background il comando in corso. **Solo mentre un task gira** |
+| 5 | Ferma | `Simulate Input`: `Ctrl+X Ctrl+K` su `down`, di nuovo su `up` | Ferma i subagent (il secondo colpo e' la conferma) |
+| 6 | Config | Testo `/config` + Invio | Impostazioni. **Provarlo non e' gratis**, vedi sotto |
+
+**Il tasto Config non si prova a cuor leggero.** Apre un'interfaccia dove si
+toccano impostazioni **persistenti**, e basta un Invio di troppo per cambiarne
+una senza accorgersene: la prova del 18/08/2026 ha lasciato
+`autoCompactEnabled` su `false` in `~/.claude/settings.json`, ed e' stato
+necessario rimetterlo a posto a mano. **Chi rifara' TBD-7 deve saperlo prima,
+non dopo.** Due dettagli che rendono facile l'incidente: il pannello **non** si
+chiude al primo `Esc` se il campo di ricerca ha il focus, e la voce selezionata
+si commuta con Invio.
+
+**`Ctrl+B` e' legato al contesto `Task`, non a `Chat`.** Fuori da un task in
+corso non e' un tasto rotto: e' un tasto che in quel momento non esiste.
+Provarlo a vuoto non dimostra niente.
 
 ## Manopole
+
+Uguali su tutte e tre le pagine, per la stessa ragione dei tre tasti ciechi:
+restano sotto le dita qualunque pagina sia attiva.
+
+**Installate il 19/08/2026** con `scripts/manopole-installa.py` e provate tutte
+e tre sul deck: funzionano. Lo script di suo non scrive niente — mostra e basta
+— e con `--scrivi` pretende OpenDeck fermo e fa il backup dei tre profili.
 
 | # | Rotazione | Pressione |
 |---|---|---|
 | 1 | Freccia su / freccia giu' | `Ctrl+O` (apri il transcript da scorrere) |
-| 2 | Volume di sistema | Muto |
-| 3 | Zoom del terminale (`Ctrl+Shift++` / `Ctrl+-`) | Zoom originale (`Ctrl+0`) |
+| 2 | Volume di sistema, con `pactl` | Muto, con `pactl` |
+| 3 | Zoom del terminale (`Ctrl` + `+` / `Ctrl` + `-`) | Zoom originale (`Ctrl+0`) |
+
+A differenza dei tasti, le manopole **non hanno schermo**: non c'e' il `?` da
+sbloccare con una prima pressione descritto nei limiti noti.
+
+**Schema dello slot**, letto il 19/08/2026 configurandone una nella GUI invece
+di dedurlo: `sliders` e' una lista di **tre**, l'indice e' la posizione
+(0 = sinistra), e l'oggetto ha la stessa forma di quello di un tasto
+(`action`, `children`, `context`, `current_state`, `settings`, `states`).
+Cambia il contesto: i tasti sono `Keypad.<posizione>.<stato>`, le manopole
+**`Encoder.<posizione>.<stato>`**.
+
+I campi delle impostazioni stanno nei property inspector delle azioni, dentro
+`plugins/com.amansprojects.starterpack.sdPlugin/propertyInspector/`:
+`Simulate Input` ha `down`, `up`, `anticlockwise`, `clockwise`; `Run Command`
+ha `down`, `up`, `rotate`, `file`, `show`. Su encoder `down` e' la **pressione**
+("Dial down" nella GUI). Differenza che conta: **Simulate Input ha una casella
+per verso di rotazione, Run Command ne ha una sola**, `rotate`, dove `%d`
+diventa il numero di scatti — negativo in senso antiorario.
+
+I nomi dei tasti accettati (`UpArrow`, `DownArrow`, `Control`, `Unicode`, e le
+azioni `Press`, `Release`, `Click`) si leggono nel binario del plugin. Provati
+sul deck il 19/08: la sintassi passa, e `Key(Unicode('+'), Click)` produce il
+keysym `plus` sulla tastiera italiana.
+
+**Lo zoom non e' `Ctrl+Shift++`**, come diceva questo documento fino al
+19/08/2026. Le scorciatoie in vigore qui sono `<Control>plus`,
+`<Control>minus`, `<Control>0`, lette da `gsettings` sotto
+`org.gnome.Terminal.Legacy.Keybindings` — schema rilocabile, serve il percorso
+`/org/gnome/terminal/legacy/keybindings/` — e senza personalizzazioni in
+`dconf`. Sulla tastiera italiana il `+` e' gia' senza maiuscolo. Provate il
+19/08 mandandole con XTEST, cioe' la stessa strada del deck: lo zoom risponde e
+torna al valore di partenza. Le gestisce **gnome-terminal, non Claude Code**,
+quindi valgono anche mentre Claude Code lavora. Conseguenza da tenere a mente:
+`Ctrl+-` in Claude Code sarebbe `chat:undo`, ma se il terminale se lo prende
+prima non lo raggiungi — dentro Claude Code non e' stato provato.
+
+**Per il volume non esiste un'azione pronta.** Il plugin starterpack ha cinque
+azioni in tutto — Run Command, Open URL, Simulate Input, Switch Profile,
+Device Brightness — e nessuna tocca il volume di sistema. Si passa da
+`Run Command` con `pactl`, verificato il 19/08 su questa macchina alzando,
+riabbassando e ripristinando il valore grezzo di partenza:
+
+```
+pactl set-sink-volume @DEFAULT_SINK@ +5%
+pactl set-sink-volume @DEFAULT_SINK@ -5%
+pactl set-sink-mute   @DEFAULT_SINK@ toggle
+```
 
 La manopola 1 fa due cose diverse a seconda di dove sei: nel transcript viewer
 scorre, nel prompt naviga la cronologia. Non e' un difetto — sono le frecce che
@@ -210,19 +316,67 @@ Tre previsioni di questo documento sono state smentite o corrette:
 
 1. **`Alt+P` e `Alt+T` passano.** Erano dati per probabili vittime degli
    acceleratori dei menu del terminale: arrivano invece come `ESC p` / `ESC t`,
-   la codifica giusta. Nessun rimedio necessario. (`Alt+O` non esiste piu': il
-   tasto Fast manda `/fast` + Invio.)
-2. **`Ctrl+X Ctrl+K` trasmette, ma il tasto e' incompleto.** I due byte
-   arrivano a 2 ms l'uno dall'altro, pero' l'accordo c'e' **una volta sola**,
-   mentre per confermare va ripetuto entro 3 secondi. Il tasto fa al massimo
-   meta' del lavoro. Da correggere o da togliere.
-3. **`Esc Esc` arriva senza pausa: 0,0 ms fra i due.** Il profilo ha un singolo
-   `Simulate Input` con `[Key(Escape, Click), Key(Escape, Click)]`, non la
-   multi-azione con pausa che questo documento prescriveva. Due Esc nello stesso
-   millisecondo hanno buone probabilita' di essere letti come uno solo.
+   la codifica giusta. Nessun rimedio necessario.
+2. **`Ctrl+X Ctrl+K` trasmetteva, ma il tasto era incompleto.** I due byte
+   arrivavano a 2 ms l'uno dall'altro, pero' l'accordo c'era **una volta sola**,
+   mentre per confermare va ripetuto entro 3 secondi: il tasto faceva meta' del
+   lavoro. **Corretto il 16/08, misurato il 18/08** — vedi sotto.
+3. **`Esc Esc` arrivava senza pausa: 0,0 ms fra i due.** Il profilo aveva un
+   singolo `Simulate Input` con `[Key(Escape, Click), Key(Escape, Click)]`, non
+   la multi-azione con pausa che questo documento prescriveva. Due Esc nello
+   stesso millisecondo hanno buone probabilita' di essere letti come uno solo.
+   **Corretto il 16/08, misurato il 18/08** — vedi sotto.
 
 Vincolo confermato per tutti: **il terminale deve avere il focus**. Il deck
 manda tasti alla finestra attiva, non a Claude Code in quanto tale.
+
+### 18 agosto 2026 — le due correzioni, misurate
+
+Il 16/08 la pausa era stata ottenuta **spostando il secondo colpo su `up`**: un
+solo `Simulate Input`, l'azione di `down` alla pressione e quella di `up` al
+rilascio, cosi' la pausa diventa il tempo in cui tieni premuto. Scritto e
+installato allora, **misurato solo il 18/08** con `tools/cattura-tasti.py`.
+
+- **Rewind**: su 16 pressioni, sempre **due `Esc`**, separati da 64 ms a
+  1671 ms, cioe' esattamente quanto tieni premuto. Il menu rewind si apre
+  davvero dentro Claude Code e **basta un tocco secco**: tenerlo non serve.
+- **Ferma**: **due accordi `Ctrl+X Ctrl+K` distinti** a 78 ms, dentro la
+  finestra dei 3 secondi. Claude Code risponde al primo con `Press ctrl+x
+  ctrl+k again to stop background agents`: il secondo colpo e' la conferma.
+- **Controllo**: `Stop`, che ha solo `down`, tenuto premuto 2 secondi manda
+  **un solo `Esc`**. Nessuna ripetizione automatica in gioco, su nessun tasto.
+
+Trappola di lettura, costata una diagnosi sbagliata prima di accorgersene:
+`cattura-tasti.py` separa con `---` dopo mezzo secondo di silenzio, e con un
+tasto `down`/`up` quel taglio **non** cade fra una pressione e l'altra. Conta i
+byte, non i gruppi: un tasto `down`/`up` ne produce sempre un numero **pari**.
+
+### 18 agosto 2026 — prova semantica (TBD-7)
+
+Che i byte partano non dice che Claude Code reagisca: sono due affermazioni
+diverse. Il secondo tratto e' stato provato mandando gli stessi byte a sessioni
+`claude` usa-e-getta dentro uno pseudo-terminale, e rileggendo lo schermo.
+
+Fanno quello che questo documento promette: `Ctrl+O` (interruttore del
+transcript), `Ctrl+R` (ricerca nei prompt), `Ctrl+G` (editor esterno,
+verificato con un editor finto che scriveva un marcatore nel file), `Ctrl+S`
+(stash **e** ripristino), `/resume`, `/btw ` (scrive e **non** manda), `Alt+P`,
+`Alt+T`, `/config`, `Ctrl+X Ctrl+K`. `/fast` commuta davvero, provato a mano.
+
+Restano con riserva: `Ctrl+T` non dice niente in una sessione senza checklist,
+`Ctrl+B` niente senza un task in corso, e `Voce` (`Space`) non e' stato provato
+per non far partire la dettatura.
+
+**`Alt+O` esiste ancora**, al contrario di quanto diceva il punto 1:
+`~/.claude/keybindings.json` lo lega a `chat:fastMode`. Provato tre volte a
+campo pulito, pero', **non produce nessun cambiamento visibile**. La
+scorciatoia c'e', l'effetto non si vede: finche' non si capisce perche', il
+tasto Fast resta su `/fast` + Invio.
+
+Nota di metodo: `~/.claude/keybindings.json` dice **cos'e' legato**, non **cosa
+succede**. `Ctrl+L` risulta legato a `chat:clearInput` e non svuota il campo.
+Per questo servono tutte e due le prove, la cattura dei byte e la prova a
+schermo.
 
 ## Multi Action: esegue, ma non disegna
 
@@ -243,7 +397,9 @@ Per questo la pressione che cicla la modalita' e' finita **dentro il plugin**
 Quello che si e' imparato resta comunque utile: **so scrivere un multi-action
 che OpenDeck accetta senza correggerlo**, contesti dei figli compresi
 (`Keypad.<posizione>.<indice>`, il contenitore e' `.0` e i figli `.1`, `.2`…).
-Serve per dare una pausa ai due `Esc` del Rewind. Il riferimento e'
+Per il Rewind non e' servito — la pausa si e' ottenuta con `down`/`up`, senza
+contenitore — ma resta pronto se un giorno servira' una sequenza vera. Il
+riferimento e'
 `docs/esempio-multiaction.json`, e `tools/genera-multiaction.py` mostra come e'
 stato costruito.
 

@@ -32,6 +32,8 @@ scripts/check.sh                  diagnostica in sola lettura
 scripts/install-hook.sh           installa l'hook, idempotente
 scripts/profili-genera.py         come sono stati prodotti i profili in uso
 scripts/profili-installa.sh       li installa, con backup e OpenDeck fermo
+scripts/manopole-installa.py      programma le tre manopole (di suo non scrive)
+scripts/volume.sh                 volume di sistema per la manopola centrale
 tools/cattura-tasti.py            registra i byte che arrivano dal deck
 tools/genera-multiaction.py       come si costruisce un profilo multi-action
 keys/                             17 icone PNG per i tasti (+ provino.png)
